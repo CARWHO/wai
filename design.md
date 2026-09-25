@@ -15,6 +15,19 @@
 
 ESP32 → Supabase (insert reading) → Realtime → app updates live → API route calls OpenAI → diagnosis / prediction / suggestion
 
+## Inspiration
+
+**Farm**
+- [Halter](https://apps.apple.com/nz/app/halter/id1453448841): collars + app; virtual fences, AI health alerts
+- [Farmbot](https://www.facebook.com/groups/RFTTE/posts/10161016410083048/): tank, bore, dam level monitoring
+- [Farmdeck](https://www.farmdeck.com/features/water-level-monitoring/): real-time water levels
+- [Intelli-Tank](https://apps.apple.com/us/app/intelli-tank/id1381515840): tank level + temperature app
+- [Aqvify](https://aqvify.com/): well and tank level app
+
+**Fitness (health score pattern)**
+- [Oura Readiness Score](https://support.ouraring.com/hc/en-us/articles/360025589793-Readiness-Score): one 0–100 score from many signals
+- [WHOOP vs Oura vs Garmin scores](https://www.kygo.app/post/recovery-scores-compared-whoop-oura-garmin): how recovery scores are built
+
 ## Demo
 
 - **Primary**: real iPhone, app added to home screen, mirrored to Windows laptop via AeroMirror (AirPlay). Bad Wi-Fi → USB + Personal Hotspot.
