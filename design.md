@@ -9,6 +9,7 @@
 | Backend | Supabase: Postgres, auth, Realtime |
 | Hardware | ESP32 + sensors → Supabase REST over Wi-Fi |
 | AI | OpenAI API via Next.js API routes |
+| Emulation | Real iPhone (PWA on home screen) mirrored to Windows laptop via AeroMirror (AirPlay). Backup: Chrome DevTools device mode |
 | Later | SwiftUI port on Mac, same Supabase backend |
 
 ## Libraries
