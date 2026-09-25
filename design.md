@@ -19,7 +19,7 @@ ESP32 → Supabase (insert reading) → Realtime → app updates live → API ro
 
 **Farm**
 - [Halter](https://apps.apple.com/nz/app/halter/id1453448841): collars + app; virtual fences, AI health alerts
-- [Farmbot](https://www.facebook.com/groups/RFTTE/posts/10161016410083048/): tank, bore, dam level monitoring
+- [Farmbot](https://farmbot.com.au/): tank, bore, dam, rain monitoring; 10k+ AU producers
 - [Farmdeck](https://www.farmdeck.com/features/water-level-monitoring/): real-time water levels
 - [Intelli-Tank](https://apps.apple.com/us/app/intelli-tank/id1381515840): tank level + temperature app
 - [Aqvify](https://aqvify.com/): well and tank level app
