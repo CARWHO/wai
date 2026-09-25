@@ -37,3 +37,10 @@ Subscription per acre per month. Farmers pay for the outcome, not the hardware.
 - Next.js (iOS-style PWA) on Vercel
 - Supabase: database, auth, realtime
 - ESP32 → Supabase REST
+
+### Hardware (demo)
+
+- Board: [Duinotech ESP32, Wi-Fi + Bluetooth (Jaycar XC3800)](https://www.jaycar.co.nz/duinotech-esp32-main-board-with-wi-fi-and-bluetooth/p/XC3800)
+- Water level: [HC-SR04 ultrasonic (Jaycar XC4442)](https://www.jaycar.co.nz/arduino-compatible-dual-ultrasonic-sensor-module/p/XC4442), mounted above the trough. Echo is 5V: use a voltage divider to the 3.3V ESP32 pin.
+- Soil moisture (optional): [Jaycar XC4604](https://www.jaycar.co.nz/duinotech-arduino-compatible-soil-moisture-sensor-module/p/XC4604), analogue into an ADC pin.
+- Power: USB power bank.

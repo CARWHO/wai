@@ -4,12 +4,27 @@
 
 | Layer | Choice |
 |---|---|
-| App | Next.js + Konsta UI (iOS theme) + Tailwind, installable PWA |
+| App | Next.js + Astryx + Tailwind, installable PWA |
 | Hosting | Vercel (auto-deploy on push) |
 | Backend | Supabase: Postgres, auth, Realtime |
 | Hardware | ESP32 + sensors → Supabase REST over Wi-Fi |
 | AI | OpenAI API via Next.js API routes |
 | Later | SwiftUI port on Mac, same Supabase backend |
+
+## Libraries
+
+| Need | Library |
+|---|---|
+| Framework | `next` (React 19, required by Astryx) |
+| UI | [Astryx](https://astryx.atmeta.com/) by Meta: `@astryxdesign/core` + `@astryxdesign/theme-matcha`. Same as desktop app |
+| Styling overrides | Tailwind via `className` |
+| Backend / live data | `@supabase/supabase-js` |
+| AI | `openai` (API route) |
+| Map | `react-leaflet` + Esri satellite tiles (free, no key) |
+| Charts | `recharts`, unless Astryx has charts |
+| PWA | Next built-in `app/manifest.ts` |
+
+Astryx is desktop-first and in beta. Mobile pieces (bottom tab bar, bottom sheet) may need building ourselves.
 
 ## Data flow
 
