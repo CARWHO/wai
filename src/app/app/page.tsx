@@ -6,8 +6,8 @@ import { useFarm, type ProbeView } from "@/lib/farm";
 import { useAI } from "@/lib/ai";
 import { ago, status, statusColor, statusLabel } from "@/lib/supabase";
 import { duration, HOUR, issues, issueTitle, metric, withUnit } from "@/lib/metrics";
-import { Badge, Card, Dot, Header, Icon, Label, Ring, Section, Spark } from "@/components/ui";
-import { Legend, TrendChart } from "@/components/TrendChart";
+import { Badge, Card, Dot, Header, Icon, Label, Ring, RoundButton, Section, Spark } from "@/components/ui";
+import { signOut } from "@/lib/auth";import { Legend, TrendChart } from "@/components/TrendChart";
 import { Wordmark } from "@/components/Koru";
 
 const word = (v: number) => (v >= 80 ? "Good" : v >= 50 ? "Fair" : "Poor");
@@ -66,7 +66,15 @@ export default function Home() {
 
   return (
     <div className="flex flex-col gap-7">
-      <Header title={<Wordmark />} right={<Label>Canterbury farm</Label>} />
+      <Header
+        title={<Wordmark />}
+        right={
+          <div className="flex items-center gap-3">
+            <Label>Canterbury farm</Label>
+            <RoundButton icon="logout" label="Sign out" onClick={signOut} />
+          </div>
+        }
+      />
 
       {alerts.length > 0 && (
         <div className="-mt-3 flex flex-col gap-2">

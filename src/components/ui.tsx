@@ -224,6 +224,7 @@ const PATHS: Record<string, string> = {
   doc: "M14 3H6v18h12V7zM14 3v4h4M9 13h6m-6 4h6",
   share: "M12 3v12M7 8l5-5 5 5M5 13v7h14v-7",
   download: "M12 3v12m-5-5 5 5 5-5M5 21h14",
+  logout: "M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10",
 };
 
 export function Icon({ name, className = "h-5 w-5" }: { name: string; className?: string }) {

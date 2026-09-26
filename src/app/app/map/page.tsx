@@ -8,6 +8,7 @@ import { ago, status, statusColor, statusLabel } from "@/lib/supabase";
 import { METRICS, present, PRIMARY, value, withUnit } from "@/lib/metrics";
 import { Badge, Dot, Icon, RoundButton, Ring, Row } from "@/components/ui";
 import { useLiveMap } from "@/components/LiveMap";
+import { SensorCheck } from "@/components/SensorCheck";
 
 const dark = "grid h-11 w-11 place-items-center rounded-full bg-ink text-paper";
 const chip = "pointer-events-auto flex items-center gap-2 rounded-full bg-ink px-5 py-3 text-[15px] font-medium text-paper";
@@ -69,6 +70,7 @@ function Live() {
 
           {v ? (
             <>
+              {v.hardware && <SensorCheck v={v} className="mt-4 rounded-2xl border border-line bg-white p-4" />}
               <div className="mt-2">
                 {[...present(v.history, PRIMARY), ...present(v.history.slice(-50), METRICS.filter((m) => m.wq && m.key !== "temp_c"))].map((m) => (
                   <Row key={m.key} k={m.name}>{withUnit(m, value(v.latest, m))}</Row>
