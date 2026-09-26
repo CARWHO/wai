@@ -1,4 +1,4 @@
-import type { Probe, Reading } from "./supabase";
+import { LIMITS, type Probe, type Reading } from "./supabase";
 
 // Demo mode: the hardware probe always looks like it's working. Real readings that look right
 // pass through untouched; missing or failed values are filled in from the last good ones,
@@ -27,8 +27,8 @@ function goodSoil(r: Reading) {
   return s != null && s > 0 && s < 100 ? s : null;
 }
 function goodGps(r: Reading) {
-  const g = r.raw?.gps as { fix?: boolean; lat?: number; lng?: number } | undefined;
-  return g?.fix && num(g.lat) != null && num(g.lng) != null ? { lat: g.lat!, lng: g.lng! } : null;
+  const g = r.raw?.gps as { fix?: boolean; lat?: number; lng?: number; hdop?: number } | undefined;
+  return g?.fix && num(g.lat) != null && num(g.lng) != null && (g.hdop ?? 99) <= LIMITS.hdopMax ? { lat: g.lat!, lng: g.lng! } : null;
 }
 
 // A trough fills and drains slowly, so in demo mode the level follows the median of the
@@ -83,7 +83,8 @@ function patch(r: Reading, g: Good, depth: number, ms: number, id: number, smoot
 }
 
 // rows: one probe's readings, newest first. Returns the same order.
-export function demoFill(rows: Reading[], probe: Probe, now: number): Reading[] {
+// here: the phone's position, used when the probe has no good GPS fix (it's next to the phone)
+export function demoFill(rows: Reading[], probe: Probe, now: number, here?: { lat: number; lng: number } | null): Reading[] {
   if (!rows.length || !rows[0].raw) return rows; // only real hardware probes
   const depth = probe.depth_cm ?? 30;
   const old = [...rows].reverse();
@@ -91,7 +92,7 @@ export function demoFill(rows: Reading[], probe: Probe, now: number): Reading[] 
   const g: Good = {
     level: old.map((r) => goodLevel(r, depth)).find((x) => x != null) ?? depth * 0.8,
     soil: old.map(goodSoil).find((x) => x != null) ?? 42,
-    ...(old.map(goodGps).find((x) => x) ?? { lat: probe.home_lat ?? probe.lat, lng: probe.home_lng ?? probe.lng }),
+    ...(here ?? old.map(goodGps).find((x) => x) ?? { lat: probe.home_lat ?? probe.lat, lng: probe.home_lng ?? probe.lng }),
   };
   const smooth = smoothLevels(old, depth, g.level);
   const out: Reading[] = [];
@@ -107,8 +108,8 @@ export function demoFill(rows: Reading[], probe: Probe, now: number): Reading[] 
     out.push(p);
     g.level = p.level_cm!;
     g.soil = p.soil_pct!;
-    const f = goodGps(p);
-    if (f) Object.assign(g, f);
+    const f = goodGps(r);
+    if (f && !here) Object.assign(g, f);
   }
   const last = old.at(-1)!;
   if (now - t(last) > MAX_GAP) {

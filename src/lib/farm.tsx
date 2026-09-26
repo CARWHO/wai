@@ -187,11 +187,11 @@ export function FarmProvider({ children }: { children: React.ReactNode }) {
   const readings = useMemo(() => {
     const depth = Object.fromEntries(probes.map((p) => [p.id, p.depth_cm]));
     const src = demo
-      ? probes.flatMap((p) => demoFill(rows.filter((r) => r.probe_id === p.id), p, now))
+      ? probes.flatMap((p) => demoFill(rows.filter((r) => r.probe_id === p.id), p, now, here))
         .sort((a, b) => b.created_at.localeCompare(a.created_at))
       : rows;
     return src.map((r) => enrich(r, depth[r.probe_id]));
-  }, [rows, probes, demo, now]);
+  }, [rows, probes, demo, now, here]);
 
   const views = useMemo<ProbeView[]>(
     () =>
