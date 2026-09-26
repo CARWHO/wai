@@ -21,7 +21,7 @@ const VERDICT_COLOR: Record<string, string> = { "Apply now": statusColor.good, "
 function Insights() {
   const router = useRouter();
   const params = useSearchParams();
-  const { views, readings, loading, alerts, subScores } = useFarm();
+  const { views, readings, loading, alerts, subScores, demo, setDemo } = useFarm();
   const tip = useFarmTip();
   const [mk, setMk] = useState<MetricKey>("pct_full");
   const [range, setRange] = useState<Range>("1d");
@@ -264,7 +264,14 @@ function Insights() {
     return (
       <div className="flex flex-col gap-6">
         <Header title={group.title} back="/app/insights" />
-        <div className="-mt-4 border-t border-line">{group.items.map((x) => item(x, `/app/insights?group=${group.id}`))}</div>
+        <div className="-mt-4 border-t border-line">
+          {group.items.map((x) => item(x, `/app/insights?group=${group.id}`))}
+          {group.id === "farm" && (
+            <Row k={<span className="flex items-center gap-2"><span className="w-2" /> Demo mode</span>} sub="Fills gaps in the probe's data" onClick={() => setDemo(!demo)}>
+              {demo ? "On" : "Off"}
+            </Row>
+          )}
+        </div>
       </div>
     );
 

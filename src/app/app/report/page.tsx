@@ -50,7 +50,7 @@ export default function ReportPage() {
       <div className="text-[14px] text-ink">
         <div className="border-b border-line pb-3">
           <div className="text-[24px] font-medium tracking-tight">Farm water &amp; soil record</div>
-          <div className="text-muted">Canterbury farm</div>
+          <div className="text-muted">UC farm</div>
           <div className="text-muted">{d(from)} to {d(to)}</div>
         </div>
 

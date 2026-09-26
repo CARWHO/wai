@@ -53,7 +53,7 @@ export default function Home() {
         title={<Wordmark />}
         right={
           <div className="flex items-center gap-3">
-            <Label>Canterbury farm</Label>
+            <Label>UC farm</Label>
             <RoundButton icon="logout" label="Sign out" onClick={signOut} />
           </div>
         }

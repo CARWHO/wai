@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { ago, isOnline, LIMITS, score, status, supabase, type Probe, type Reading, type Status } from "./supabase";
 import { issues, issueTitle, limitText, mean, metric, METRICS, withUnit, every, type Metric } from "./metrics";
+import { DEMO_KEY, demoFill } from "./demo";
 import { enrich, geofence, goodFix, interval, metres, recentFixes, timeToEmpty, visits } from "./derive";
 
 export type ProbeView = {
@@ -43,6 +44,8 @@ type Farm = {
   handle: (key: string) => void;
   snooze: (key: string, ms: number) => void;
   setHome: (probeId: string, at: { lat: number; lng: number }) => Promise<string | null>;
+  demo: boolean;
+  setDemo: (on: boolean) => void;
 };
 
 const FarmContext = createContext<Farm | null>(null);
@@ -103,6 +106,25 @@ export function FarmProvider({ children }: { children: React.ReactNode }) {
   const [snoozed, setSnoozed] = useState<Record<string, number>>(() => load(SNOOZED_KEY, {}));
   const [now, setNow] = useState(() => Date.now());
   const [here, setHere] = useState<{ lat: number; lng: number } | null>(null);
+  const [demo, setDemoState] = useState(false);
+  const setDemo = useCallback((on: boolean) => {
+    save(DEMO_KEY, on);
+    setDemoState(on);
+  }, []);
+
+  // Demo mode refreshes every 5 s so the probe looks live
+  useEffect(() => {
+    if (!demo) return;
+    const t = setInterval(() => setNow(Date.now()), 5_000);
+    return () => clearInterval(t);
+  }, [demo]);
+
+  // Demo mode is per device; ?demo=1 or ?demo=0 on any page turns it on or off
+  useEffect(() => {
+    const q = new URLSearchParams(location.search).get("demo");
+    const t = setTimeout(() => (q != null ? setDemo(q === "1") : setDemoState(load(DEMO_KEY, false))));
+    return () => clearTimeout(t);
+  }, [setDemo]);
 
   // Phone position. Needs HTTPS (or localhost); silently does nothing if denied.
   useEffect(() => {
@@ -164,8 +186,12 @@ export function FarmProvider({ children }: { children: React.ReactNode }) {
 
   const readings = useMemo(() => {
     const depth = Object.fromEntries(probes.map((p) => [p.id, p.depth_cm]));
-    return rows.map((r) => enrich(r, depth[r.probe_id]));
-  }, [rows, probes]);
+    const src = demo
+      ? probes.flatMap((p) => demoFill(rows.filter((r) => r.probe_id === p.id), p, now))
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+      : rows;
+    return src.map((r) => enrich(r, depth[r.probe_id]));
+  }, [rows, probes, demo, now]);
 
   const views = useMemo<ProbeView[]>(
     () =>
@@ -255,7 +281,7 @@ export function FarmProvider({ children }: { children: React.ReactNode }) {
   const farmScore = weighted([[subScores.level, 0.35], [subScores.soil, 0.25], [subScores.quality, 0.2], [subScores.devices, 0.2]]);
 
   return (
-    <FarmContext.Provider value={{ loading, views, readings, farmScore, subScores, alerts, handle, snooze, setHome }}>
+    <FarmContext.Provider value={{ loading, views, readings, farmScore, subScores, alerts, handle, snooze, setHome, demo, setDemo }}>
       {children}
     </FarmContext.Provider>
   );
