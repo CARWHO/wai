@@ -7,14 +7,13 @@ import { useAI } from "@/lib/ai";
 import { gps } from "@/lib/derive";
 import { ago, statusColor } from "@/lib/supabase";
 import { duration, every, fmt, HOUR, issues, limitText, mean, METRICS, value, type Metric } from "@/lib/metrics";
-import { Card, Header, Label, Row } from "@/components/ui";
+import { AICard, AINext, AIThinking, Card, Header, Label, Row } from "@/components/ui";
 
 type Diagnosis = { wrong: string; cause: string; action: string; risk: string; source?: string };
 
 const CHOICES = [
   { k: "handled", name: "Mark handled", sub: "Clears the alert until the next problem" },
   { k: "snooze", name: "Snooze 1 hour", sub: "Hides the alert, then shows it again if it's still happening" },
-  { k: "send", name: "Send to worker", sub: "Share the problem and what to do" },
 ] as const;
 
 const kindOf = (m: Metric): AlertKind => (m.wq ? "quality" : m.key === "soil_pct" ? "soil" : "level");
@@ -34,6 +33,17 @@ export default function AlertPage() {
   const usual = (k: Metric) => mean(before.map((r) => value(r, k)).filter((n) => !isNaN(n)));
   const r = a?.reading;
   const g = gps(r);
+  // each out-of-limit reading: where it was when the alert started, now, and the last 3 h of movement
+  const trend = Object.fromEntries(
+    issues(r).filter((i) => kindOf(i.m) === a?.kind).map((i) => {
+      const since = (v?.history ?? []).filter((x) => a && x.created_at >= a.since);
+      const at = (ms: number) => since.find((x) => new Date(x.created_at).getTime() >= ms);
+      const start = value(since[0], i.m);
+      const recent = at(new Date(r!.created_at).getTime() - 3 * HOUR) ?? since[0];
+      const over = duration((new Date(r!.created_at).getTime() - new Date(recent.created_at).getTime()) / HOUR);
+      return [i.m.key, { at_start: +start.toFixed(i.m.digits), now: +i.x.toFixed(i.m.digits), recent_change: +(i.x - value(recent, i.m)).toFixed(i.m.digits), over }];
+    }),
+  );
 
   const ai = useAI<Diagnosis>(
     "alert",
@@ -48,6 +58,9 @@ export default function AlertPage() {
         turbidity_ntu: r?.turbidity, ph: r?.ph, tds_ppm: r?.tds, temp_c: r?.temp_c,
       },
       usual: Object.fromEntries(METRICS.map((m) => [m.key, +usual(m).toFixed(m.digits)]).filter(([, x]) => !isNaN(x as number))),
+      trend,
+      lat: a.probe.lat,
+      lng: a.probe.lng,
       depth_cm: a.probe.depth_cm,
       empty_in_h: v?.emptyIn != null ? +v.emptyIn.toFixed(1) : null,
       distance_m: v?.geo ? Math.round(v.geo.distance) : null,
@@ -68,25 +81,13 @@ export default function AlertPage() {
     );
 
   const list = issues(r).filter((i) => kindOf(i.m) === a.kind);
-  const sections: [string, keyof Diagnosis][] = [
-    ["What's wrong", "wrong"],
-    ["Likely cause", "cause"],
-    ["Next step", "action"],
-    ["Risk if ignored", "risk"],
-  ];
-
-  async function confirm() {
+  function confirm() {
     if (choice === "handled") {
       handle(a!.key);
       router.push("/app");
-    } else if (choice === "snooze") {
+    } else {
       snooze(a!.key, HOUR);
       router.push("/app/alerts");
-    } else {
-      const text = `${a!.probe.name}: ${a!.title}. ${ai?.action ?? ""}`.trim();
-      const url = location.href;
-      if (navigator.share) await navigator.share({ title: `${a!.probe.name}: ${a!.title}`, text, url }).catch(() => {});
-      else location.href = `sms:?&body=${encodeURIComponent(`${text} ${url}`)}`;
     }
   }
 
@@ -146,17 +147,23 @@ export default function AlertPage() {
         </div>
       )}
 
-      <Card className="flex flex-col gap-4">
-        {sections.map(([name, k]) => (
-          <div key={k}>
-            <Label>{name}</Label>
-            <div className={`mt-1 whitespace-pre-line text-[15px] leading-relaxed ${k === "action" ? "font-medium" : ""}`}>{ai ? ai[k] : "Loading…"}</div>
+      <AICard s={v?.status === "bad" ? "bad" : "watch"} note={ai ? (ai.source === "openai" ? "From this probe's readings" : "Standard guidance") : undefined}>
+        {ai ? (
+          <div className="flex flex-col gap-4">
+            <div>
+              <Label>What&apos;s happening</Label>
+              <div className="mt-1 text-[15px] leading-relaxed">{ai.wrong} {ai.cause}</div>
+            </div>
+            <AINext>{"\n" + ai.action}</AINext>
+            <div>
+              <Label>If nothing changes</Label>
+              <div className="mt-1 text-[15px] leading-relaxed">{ai.risk}</div>
+            </div>
           </div>
-        ))}
-        {ai && (
-          <Label>{ai.source === "openai" ? "Written from this probe's readings" : "Standard guidance for this problem"}</Label>
+        ) : (
+          <AIThinking>Reading this probe&apos;s data…</AIThinking>
         )}
-      </Card>
+      </AICard>
 
       <div className="flex flex-col gap-2.5">
         <div className="text-[20px] font-medium tracking-tight">What next?</div>
@@ -179,7 +186,7 @@ export default function AlertPage() {
       <div className="flex items-center gap-6">
         <button onClick={() => router.back()} className="text-[16px] underline underline-offset-4">Cancel</button>
         <button onClick={confirm} className="flex-1 rounded-full bg-ink py-3 text-[16px] text-paper">
-          {choice === "send" ? "Send" : "Confirm"}
+          Confirm
         </button>
       </div>
     </div>

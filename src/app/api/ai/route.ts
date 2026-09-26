@@ -2,26 +2,54 @@ import OpenAI from "openai";
 
 const apiKey = process.env.OPENAI_API_KEY ?? process.env.OPENAI_APIKEY;
 const openai = apiKey ? new OpenAI({ apiKey }) : null;
-const model = process.env.OPENAI_MODEL ?? "gpt-4.1-mini";
+const model = process.env.OPENAI_MODEL ?? "gpt-5";
+// gpt-5 models reason before answering; minimal keeps an alert under ~4 s at about the price of gpt-4.1
+const reasoning = model.startsWith("gpt-5") ? { reasoning_effort: "minimal" as const } : {};
 
 type Kind = "alert" | "tip" | "fertiliser";
 
 const SYSTEM =
-  "You are Wai, an assistant for New Zealand farmers monitoring troughs, dams, bores and paddock soil with sensor probes. " +
-  "Write for a busy farmer: plain English, short, specific, practical. No jargon, no hedging. " +
+  "You are Wai, the water and soil expert for a New Zealand farm. Wai's probes sit in the troughs, dams, bores and paddocks and measure " +
+  "turbidity, pH, TDS, temperature, water level, soil moisture and position around the clock. The probe is the test: the farmer never needs " +
+  "a testing kit, a sample, a lab, or to go and check a number the probe already reports. Your job is to read the numbers, name the cause, " +
+  "tell the farmer how to fix it, and say what it costs them and by when if they leave it. " +
+  "Write for a busy farmer: plain English, short, specific, decisive. Commit to the most likely cause; do not list options or hedge. " +
   "Reply with JSON only.";
 
 const PROMPTS: Record<Kind, (ctx: unknown) => string> = {
   alert: (ctx) =>
-    `A probe raised an alert. kind is one of level (water low), soil (soil moisture dry or saturated), ` +
-    `quality (turbidity/pH/TDS out of limits), moved (GPS outside its geofence), offline (probe stopped reporting). Data: ${JSON.stringify(ctx)}\n` +
-    `Return JSON {"wrong": string, "cause": string, "action": string, "risk": string}. ` +
-    `wrong = what is wrong (1 sentence, use the numbers). cause = most likely cause given the data (1-2 sentences). ` +
-    `action = what to do now (2-3 short steps separated by newlines). risk = what happens in the next 24-48 h if ignored (1-2 sentences).`,
+    `A probe raised an alert. Data: ${JSON.stringify(ctx)}\n` +
+    `Fields: kind is level (water low), soil (soil moisture dry or saturated), quality (turbidity/pH/TDS out of limits), moved (GPS outside its geofence) or offline (stopped reporting). ` +
+    `now = current readings. usual = the average before the alert started. trend = each out-of-limit reading at the start of the alert, now, and recent_change over the last "over" (a duration). ` +
+    `rain_past_48h_mm and rain_next_48h_mm are measured and forecast rain at the probe. The probe name says what the water is (trough, dam, bore, river). Limits: turbidity 10 NTU, pH 6.5-8.5, TDS 600 ppm, soil dry under 20% and saturated over 90%, level low under 25%.\n` +
+    `Return JSON {"wrong": string, "cause": string, "action": string, "risk": string}.\n` +
+    `wrong = one sentence with the numbers and the movement: from what, to what, over how long, still rising or settling.\n` +
+    `cause = the single most likely cause, stated as fact, with the readings that point to it and the reading that rules out the obvious alternative (1-2 sentences, max 40 words). ` +
+    `A physically impossible movement (soil moisture jumping between 0 and 100 within minutes, a usual value near 0, a level moving tens of cm in seconds) is the sensor, not the paddock or the water: say the sensor is out of the ground, unplugged or fouled, and the fix is to reseat it. Use these patterns: ` +
+    `Turbidity up with pH and TDS steady is suspended sediment: runoff washing in after rain when rain_past_48h_mm is more than 5, otherwise stock standing in the water, a collapsed bank, or the pump or inlet drawing off the bottom. ` +
+    `Turbidity and TDS up together is effluent, fertiliser or a dead animal washing in from upstream or an adjoining paddock. TDS up alone with no rain is salt building up from evaporation, a bore pulling in saline water, or fertiliser wash-in. ` +
+    `pH rising with water over 18 C is an algal bloom; pH falling is acid runoff, peat drainage or rotting vegetation. ` +
+    `Water level falling faster than usual is demand above supply: a stuck or slow float valve, a leak, or a pump or supply line down; a level that dropped and stopped points to a leak at that height. ` +
+    `Soil dry is no rain or irrigation in the past days; soil saturated is heavy rain, irrigation left on or poor drainage. ` +
+    `Offline via LoRa (via_lora = 1) is usually the bridge laptop at the house off or without internet, otherwise the probe out of power or range. Moved is stock dragging it or a person moving it.\n` +
+    `action = how to fix it: 2 lines separated by newlines, a third only if it is a different job, no numbers or bullets, each starts with a verb, max 14 words. ` +
+    `Line 1 is the fix for the cause you named, e.g. fence stock out of the water and give them another supply, shut the intake to the irrigator, dig a settling sump on the inflow, swap the float valve, irrigate this paddock. ` +
+    `Fold what to take into the fix line (a spare float valve, a spade, fencing gear); never a line that only says what to carry. Say when: now, by a time today (use local_time and empty_in_h), or when a reading changes. ` +
+    `Put anything that can be done from the house first. Quality and level alerts where stock could drink dirty water or run out come first, stock before everything. ` +
+    `Soil alerts are paddock decisions (irrigation, grazing, fertiliser, effluent) and need no trip. Moved alerts: open the map in Wai, ask whether someone moved it on purpose, go only if nobody did. ` +
+    `Wai keeps measuring and clears the alert itself, so no line about waiting, watching or letting Wai measure. Never tell the farmer to test, sample, retest, monitor, keep an eye on, check readings, watch, verify, inspect, consider, or contact a professional, and never mention a testing kit or a lab. ` +
+    `Only name places that are in the data (the probe name); do not invent yards, offices or paddock numbers.\n` +
+    `risk = the downstream effect if nothing changes, with a deadline: who or what is hurt, how, and in how many hours or days. Project the trend (e.g. at +3.8 NTU per 3 h it passes 20 NTU by tonight) and name the loss (1-2 sentences, use the numbers). ` +
+    `Examples of effects: stock cut their water intake and scour, milkers drop yield, young stock lose condition, trough and irrigation filters and drippers block, pasture growth stops, nitrogen leaches, a council limit is breached. ` +
+    `If the cause clears on its own (rain sediment settles in 1-2 days once the inflow stops), say so and say what changes that.`,
   tip: (ctx) =>
-    `Current farm status (water levels, % full, hours until empty, soil moisture, open alerts): ${JSON.stringify(ctx)}\n` +
-    `Return JSON {"title": string, "body": string}. title = 2-5 word verdict. ` +
-    `body = one or two sentences: the single most useful suggestion or prediction for today.`,
+    `The farmer has just opened Wai. Every probe on the farm right now (online, water level, % full, hours until empty, soil moisture, open alert titles): ${JSON.stringify(ctx)}\n` +
+    `Return JSON {"title": string, "body": string}. title = 2-5 words: the one thing to do today, starting with a verb and naming the probe, or "All good" style if nothing is needed. ` +
+    `body = one or two sentences with the numbers: the cause and the fix, and what it costs by when if left, e.g. "UC River 1 is 18% full and empties in 5 h: swap the float valve before 6 pm or the herd is dry overnight." ` +
+    `Pick the probe that hurts first: stock without water or on dirty water beats everything, then a probe about to run dry, then soil, then a probe offline. ` +
+    `Wai keeps measuring and alerts on changes, so never tell the farmer to test, sample, monitor, keep an eye on, check readings, watch, verify, inspect, consider, or contact a professional, and never mention a testing kit or a lab. ` +
+    `Limits: level low under 25% full, soil dry under 20% and saturated over 90%, turbidity over 10 NTU. A reading inside its limits with no alert is fine: do not invent a problem for it, and use only numbers that are in the data. ` +
+    `If nothing needs doing, say so in one sentence and name the reading that would change it.`,
   fertiliser: (ctx) =>
     `Should the farmer apply nitrogen fertiliser to pasture now? Soil moisture and the next 48 h rain forecast: ${JSON.stringify(ctx)}\n` +
     `Return JSON {"verdict": "Apply now" | "Wait for rain" | "Too wet — leaching risk", "reason": string}. ` +
@@ -82,13 +110,28 @@ function fallbackAlert(c: Ctx) {
         action: "Check the bridge laptop is running and online.\nCheck the probe has power (LED on the board).\nMove it closer or check the antenna.",
         risk: "Until it's back you get no level, soil or movement alerts for this spot.",
       };
-    default:
+    default: {
+      const tu = n(now.turbidity_ntu), rain = n(c.rain_past_48h_mm);
+      const tds = n(now.tds_ppm), usualTds = n((c.usual as Ctx | undefined)?.tds);
+      const effluent = tds != null && usualTds != null && tds > usualTds * 1.3;
+      const wet = rain != null && rain > 5;
       return {
-        wrong: "Water quality at this probe has dropped sharply in the last few minutes.",
-        cause: "A sudden jump in turbidity usually means sediment or runoff has entered the water, often from stock in the water or a damaged trough inlet.",
-        action: "Check the water source and inlet now.\nMove stock off this water until it clears.\nFlush or clean the trough if needed.",
-        risk: "Stock drinking dirty water can lose condition and get sick within a day or two, and runoff may breach your regional council limits.",
+        wrong: tu != null ? `Turbidity at ${p} is ${tu.toFixed(0)} NTU, above the 10 NTU limit, and has been since ${c.started ?? "the alert started"}.` : `Water quality at ${p} is outside its limits (${c.detail ?? "see the readings above"}).`,
+        cause: effluent
+          ? `Turbidity and TDS have risen together, so something is washing in from upstream or the paddock beside it: effluent, fertiliser or a dead animal, not just mud.`
+          : wet
+            ? `${rain} mm of rain in the last 48 h has washed sediment in from the catchment. TDS and pH are steady, so it is mud, not effluent or fertiliser.`
+            : `No rain in the last 48 h and TDS steady, so the sediment is being stirred up in place: stock standing in the water, a slumped bank, or the inlet drawing off the bottom.`,
+        action: effluent
+          ? `Fence stock off ${p} now and run them on another water source.\nWalk the inflow upstream and remove or divert the source.\nHold effluent and fertiliser off the paddocks that drain into it.`
+          : wet
+            ? `Shut any intake from ${p} to troughs or irrigation until it is under 10 NTU.\nRun stock on another water source today.\nDig a settling sump on the inflow drain before the next rain.`
+            : `Fence stock off ${p} today and run them on another water source.\nRaise the inlet or float off the bottom and fix any slumped bank.`,
+        risk: effluent
+          ? `Stock drinking this scour within 2-3 days and can pick up infection; TDS rising with turbidity is what the council fines for. It will not clear on its own.`
+          : `At ${tu?.toFixed(0) ?? "this"} NTU stock cut their intake and scour within 2-3 days, and any trough or irrigation filter on this line blocks in about a week. Rain sediment settles in 1-2 days once the inflow stops${wet ? "" : ", but this one will not while stock are in the water"}.`,
       };
+    }
   }
 }
 
@@ -111,29 +154,32 @@ function fallbackTip(c: Ctx) {
   return { title: "All looks good", body: "Water levels are steady and soil moisture is in range, so no trough checks are needed today." };
 }
 
-// Next 48 h rain from Open-Meteo (free, no key), cached per ~1 km for an hour
-const forecasts = new Map<string, { at: number; rain: number | null; chance: number | null }>();
+// Rain at the probe from Open-Meteo (free, no key): past 48 h measured and next 48 h forecast, cached per ~1 km for an hour
+const forecasts = new Map<string, { at: number; past: number | null; rain: number | null; chance: number | null }>();
 async function forecast(lat: number, lng: number) {
   const k = `${lat.toFixed(2)},${lng.toFixed(2)}`;
   const hit = forecasts.get(k);
   if (hit && Date.now() - hit.at < 3_600_000) return hit;
   try {
     const r = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&hourly=precipitation,precipitation_probability&forecast_hours=48&timezone=auto`,
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&hourly=precipitation,precipitation_probability&past_hours=48&forecast_hours=48&timeformat=unixtime`,
       { signal: AbortSignal.timeout(5000) },
     );
-    const j = (await r.json()) as { hourly?: { precipitation?: number[]; precipitation_probability?: (number | null)[] } };
-    const p = j.hourly?.precipitation;
-    if (!p) throw new Error("no forecast");
+    const j = (await r.json()) as { hourly?: { time?: number[]; precipitation?: (number | null)[]; precipitation_probability?: (number | null)[] } };
+    const p = j.hourly?.precipitation, time = j.hourly?.time;
+    if (!p || !time) throw new Error("no forecast");
+    const now = Date.now() / 1000;
+    const sum = (xs: (number | null)[]) => +xs.reduce((a, b) => a! + (b ?? 0), 0)!.toFixed(1);
     const out = {
       at: Date.now(),
-      rain: +p.reduce((a, b) => a + (b ?? 0), 0).toFixed(1),
-      chance: Math.max(0, ...(j.hourly?.precipitation_probability ?? []).map((x) => x ?? 0)),
+      past: sum(p.filter((_, i) => time[i] < now)),
+      rain: sum(p.filter((_, i) => time[i] >= now)),
+      chance: Math.max(0, ...(j.hourly?.precipitation_probability ?? []).filter((_, i) => time[i] >= now).map((x) => x ?? 0)),
     };
     forecasts.set(k, out);
     return out;
   } catch {
-    return { at: Date.now(), rain: null, chance: null };
+    return { at: Date.now(), past: null, rain: null, chance: null };
   }
 }
 
@@ -155,6 +201,7 @@ function fallbackFertiliser(soil: number | null, rain: number | null) {
 async function ask(kind: Kind, context: unknown) {
   const res = await openai!.chat.completions.create({
     model,
+    ...reasoning,
     response_format: { type: "json_object" },
     messages: [
       { role: "system", content: SYSTEM },
@@ -176,7 +223,17 @@ export async function POST(req: Request) {
     const extra = { rain_48h_mm: f.rain, rain_chance_pct: f.chance, soil_pct: soil };
     ctx = { ...context, ...extra };
     fallback = { ...fallbackFertiliser(soil, f.rain), ...extra };
-  } else fallback = kind === "tip" ? fallbackTip(context ?? {}) : fallbackAlert(context ?? {});
+  } else if (kind === "alert") {
+    const lat = n(context?.lat), lng = n(context?.lng);
+    const f = lat != null && lng != null ? await forecast(lat, lng) : { past: null, rain: null };
+    ctx = {
+      ...context,
+      rain_past_48h_mm: f.past,
+      rain_next_48h_mm: f.rain,
+      local_time: new Date().toLocaleString("en-NZ", { timeZone: "Pacific/Auckland", weekday: "short", hour: "numeric", minute: "2-digit" }),
+    };
+    fallback = fallbackAlert(ctx as Ctx);
+  } else fallback = fallbackTip(context ?? {});
 
   if (!openai) return Response.json({ ...fallback, source: "fallback" });
   try {
