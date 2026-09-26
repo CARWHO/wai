@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { ago, isOnline, LIMITS, score, status, supabase, type Probe, type Reading, type Status } from "./supabase";
 import { issues, issueTitle, limitText, mean, metric, METRICS, withUnit, every, type Metric } from "./metrics";
-import { DEMO_KEY, demoFill } from "./demo";
+import { DEMO_KEY, demoFill, demoSeeded } from "./demo";
 import { enrich, geofence, goodFix, interval, metres, recentFixes, timeToEmpty, visits } from "./derive";
 
 export type ProbeView = {
@@ -187,7 +187,10 @@ export function FarmProvider({ children }: { children: React.ReactNode }) {
   const readings = useMemo(() => {
     const depth = Object.fromEntries(probes.map((p) => [p.id, p.depth_cm]));
     const src = demo
-      ? probes.flatMap((p) => demoFill(rows.filter((r) => r.probe_id === p.id), p, now, here))
+      ? probes.flatMap((p) => {
+        const mine = rows.filter((r) => r.probe_id === p.id);
+        return mine[0]?.raw ? demoFill(mine, p, now, here) : demoSeeded(mine.map((r) => ({ ...r })), p, now);
+      })
         .sort((a, b) => b.created_at.localeCompare(a.created_at))
       : rows;
     return src.map((r) => enrich(r, depth[r.probe_id]));

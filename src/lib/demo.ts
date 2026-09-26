@@ -116,5 +116,67 @@ export function demoFill(rows: Reading[], probe: Probe, now: number, here?: { la
     fill(Math.max(t(last), now - MAX_FILL * STEP), now - STEP, last);
     out.push(patch({ ...last, raw: { ...(last.raw ?? {}), echo_ok: 0, soil_pct: 0, soil_adc: 0, gps: { fix: false } } }, g, depth, now - 5_000, fake--));
   }
-  return out.reverse();
+  return story(out, depth, now).reverse();
+}
+
+// A past event to point at in the live demo: this morning the trough ran low (a stuck float
+// valve), the alert fired, and it refilled once the valve was freed. It sits 4 to 2 hours ago.
+const LOW_AT = 4 * 60 * 60_000;
+function story(out: Reading[], depth: number, now: number) {
+  const low = depth * 0.14; // under the 25% limit
+  const a = now - LOW_AT, b = now - LOW_AT / 2;
+  const edge = 20 * 60_000; // drains over 20 min, refills over 20 min
+  for (const r of out) {
+    const ms = t(r);
+    if (ms < a || ms > b || r.level_cm == null) continue;
+    const f = Math.min(1, (ms - a) / edge, (b - ms) / edge);
+    const level = +(r.level_cm + (low + wobble(ms, 0.3, 7 * 60_000) - r.level_cm) * f).toFixed(1);
+    const echo = Math.round(((depth - level) / 0.0343) * 2);
+    r.level_cm = level;
+    r.raw = { ...r.raw, distance_cm: +(depth - level).toFixed(1), echo_ok: 5, echo_us: [echo, echo + 2, echo - 1, echo, echo + 1] };
+  }
+  return out;
+}
+
+// The seeded probes (no `raw`) report every 30 min. In demo mode they carry on from their last
+// reading up to now, and two of them drift into a believable alert over the next few hours:
+// the Dam's turbidity climbs after rain and Bore 1's paddock dries out.
+const SEED_STEP = 30 * 60_000;
+const SEED_MAX = 2 * 24 * 60 * 60_000;
+const RAMP = 3 * 60 * 60_000;
+const SCENARIO: Record<string, Partial<Record<"turbidity" | "soil_pct", number>>> = {
+  Dam: { turbidity: 14.2 },
+  "Bore 1": { soil_pct: 16.5 },
+};
+
+export function demoSeeded(rows: Reading[], probe: Probe, now: number): Reading[] {
+  if (!rows.length || rows[0].raw) return rows;
+  const last = rows[0];
+  const out: Reading[] = [];
+  for (let ms = t(last) + SEED_STEP; ms <= now && ms - t(last) <= SEED_MAX; ms += SEED_STEP) {
+    const w = (amp: number, p: number) => wobble(ms, amp, p);
+    out.push({
+      ...last,
+      id: -Math.floor(ms / 1000), // stable per slot, so handled/snoozed alerts stay that way
+      created_at: new Date(ms).toISOString(),
+      turbidity: last.turbidity == null ? null : +(last.turbidity + w(0.4, 3.1 * 3_600_000)).toFixed(2),
+      ph: last.ph == null ? null : +(last.ph + w(0.05, 5.3 * 3_600_000)).toFixed(2),
+      tds: last.tds == null ? null : +(last.tds + w(6, 4.2 * 3_600_000)).toFixed(1),
+      temp_c: last.temp_c == null ? null : +(last.temp_c + w(0.6, 12 * 3_600_000)).toFixed(2),
+      level_cm: last.level_cm == null ? null : +(last.level_cm + w(2, 7 * 3_600_000)).toFixed(1),
+      soil_pct: last.soil_pct == null ? null : +(last.soil_pct + w(1, 9 * 3_600_000)).toFixed(1),
+    });
+  }
+  // ramp the scenario in from the last real reading, so the alert's start time stays put
+  const s = SCENARIO[probe.name] ?? {};
+  const from = t(last);
+  for (const r of [...rows, ...out]) {
+    const f = Math.min(1, Math.max(0, (t(r) - from) / RAMP));
+    if (!f) continue;
+    for (const [k, target] of Object.entries(s) as ["turbidity" | "soil_pct", number][]) {
+      const base = r[k];
+      if (base != null) r[k] = +(base + (target - base) * f).toFixed(2);
+    }
+  }
+  return [...out.reverse(), ...rows];
 }
