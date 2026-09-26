@@ -7,7 +7,16 @@ export const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_SHQJ47S7FUEQSTO0HgUynw_SJxAjKZM",
 );
 
-export type Probe = { id: string; name: string; lat: number; lng: number };
+export type Probe = {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  depth_cm: number | null; // sensor to floor, for % full
+  home_lat: number | null; // geofence centre; null = no "moved" alert
+  home_lng: number | null;
+  geofence_m: number;
+};
 export type Reading = {
   id: number;
   probe_id: string;
@@ -17,19 +26,40 @@ export type Reading = {
   temp_c: number | null;
   tds: number | null;
   level_cm: number | null;
+  soil_pct: number | null; // filled from raw.soil_pct by a trigger for hardware probes
+  pct_full?: number | null; // derived in the app: level_cm / probe depth_cm
   // every unprocessed value the ESP32 probe read (see hardware/firmware/README.md)
   raw?: Record<string, unknown> | null;
   created_at: string;
 };
 
+// Remote command for a LoRa probe: the app inserts it, hardware/bridge sends it and records the ack
+export type Command = {
+  id: number;
+  probe_id: string;
+  cmd: "ping" | "read" | "interval";
+  arg: number | null;
+  status: "pending" | "sent" | "done" | "failed";
+  created_at: string;
+  sent_at: string | null;
+  acked_at: string | null;
+};
+
 export type Status = "good" | "watch" | "bad";
 
-// Alert thresholds
-export const LIMITS = { turbidity: 10, phMin: 6.5, phMax: 8.5, tds: 600 };
+// Alert thresholds, all in one place
+export const LIMITS = {
+  turbidity: 10, phMin: 6.5, phMax: 8.5, tds: 600,
+  levelPct: 25, // % full below this is low
+  soilDry: 20, soilWet: 90, // soil moisture %
+  hdopMax: 5, // GPS fixes worse than this are ignored (jitter)
+  offlineMinMs: 2 * 60_000, // hardware probe offline after max(this, 3 × its interval)
+};
 
-// 0-100: penalise turbidity above 5 NTU, pH away from 7.2, TDS above 400. Missing values count as fine.
+// 0-100 water quality: penalise turbidity above 5 NTU, pH away from 7.2, TDS above 400.
+// NaN when the reading has no water quality sensor, so absent data doesn't count as good.
 export function score(r?: Reading) {
-  if (!r) return 0;
+  if (!r || (r.turbidity == null && r.ph == null && r.tds == null)) return NaN;
   const s =
     100 -
     Math.max(0, (r.turbidity ?? 0) - 5) * 1.5 -
@@ -52,7 +82,7 @@ export function breaches(r?: Reading) {
   return out;
 }
 
-// Probe counts as online if it reported in the last 45 minutes (it reports every 30)
+// Seeded probes report every 30 min, so count them online for 45. Hardware probes: see farm.tsx.
 export const isOnline = (r?: Reading) => !!r && Date.now() - new Date(r.created_at).getTime() < 45 * 60_000;
 
 export function ago(iso?: string) {

@@ -44,7 +44,7 @@ export function Spark({ data, k, color = "#141412", height = 64 }: {
 }
 
 // Page header: big title, optional back chevron, right slot
-export function Header({ title, back, right }: { title: string; back?: string; right?: React.ReactNode }) {
+export function Header({ title, back, right }: { title: React.ReactNode; back?: string; right?: React.ReactNode }) {
   return (
     <div className="flex min-h-[64px] items-center justify-between gap-3 pt-4">
       <div className="flex items-center gap-2">
@@ -231,5 +231,28 @@ export function Icon({ name, className = "h-5 w-5" }: { name: string; className?
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={name === "more" ? 3 : 1.6} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
       <path d={PATHS[name]} />
     </svg>
+  );
+}
+
+// Small status pill, e.g. "Moved"
+export function Badge({ children, color = statusColor.bad }: { children: React.ReactNode; color?: string }) {
+  return <span className="rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-paper" style={{ background: color }}>{children}</span>;
+}
+
+// Row of day bars with counts, e.g. trough visits per day
+export function Bars({ data, height = 64 }: { data: { k: string; label: string; n: number }[]; height?: number }) {
+  const max = Math.max(1, ...data.map((d) => d.n));
+  return (
+    <div className="flex items-end gap-1.5">
+      {data.map((d, i) => (
+        <div key={d.k} className="flex flex-1 flex-col items-center gap-1">
+          <span className="font-mono text-[11px] tabular-nums">{d.n}</span>
+          <div className="flex w-full items-end" style={{ height }}>
+            <div className={`w-full rounded-t ${i === data.length - 1 ? "bg-ink" : "bg-line"}`} style={{ height: `${Math.max(3, (d.n / max) * 100)}%` }} />
+          </div>
+          <span className="font-mono text-[10px] uppercase text-muted">{d.label}</span>
+        </div>
+      ))}
+    </div>
   );
 }

@@ -1,7 +1,9 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { breaches, isOnline, score, status, supabase, type Probe, type Reading, type Status } from "./supabase";
+import { ago, isOnline, LIMITS, score, status, supabase, type Probe, type Reading, type Status } from "./supabase";
+import { issues, issueTitle, limitText, mean, metric, METRICS, withUnit, every, type Metric } from "./metrics";
+import { enrich, geofence, goodFix, interval, metres, recentFixes, timeToEmpty, visits } from "./derive";
 
 export type ProbeView = {
   probe: Probe;
@@ -10,16 +12,25 @@ export type ProbeView = {
   score: number;
   status: Status;
   online: boolean;
-  breaches: string[];
+  hardware: boolean; // real ESP32 probe (fills `raw`), as opposed to a seeded/simulated one
+  interval: number; // usual ms between reports
+  scores: { level: number; soil: number; quality: number }; // NaN when the probe has no such sensor
+  emptyIn: number | null; // hours until empty at the current rate, null if not falling
+  visits: number[]; // trough visit start times (ms)
+  geo: ReturnType<typeof geofence>;
   located: "gps" | "phone" | null; // real hardware probe placed by its GPS, or next to the phone
 };
 
+export type AlertKind = "quality" | "level" | "soil" | "moved" | "offline";
 export type Alert = {
-  key: string; // probe id + first reading of the breach, so a new breach is a new alert
+  id: string; // probe + kind, used in the URL
+  key: string; // id + first reading of the streak, so a new streak is a new alert
+  kind: AlertKind;
   probe: Probe;
   since: string;
   reading: Reading;
-  breaches: string[];
+  title: string;
+  detail: string[];
 };
 
 type Farm = {
@@ -27,20 +38,35 @@ type Farm = {
   views: ProbeView[];
   readings: Reading[];
   farmScore: number;
-  subScores: { level: number; quality: number; devices: number };
+  subScores: { level: number; soil: number; quality: number; devices: number };
   alerts: Alert[];
   handle: (key: string) => void;
   snooze: (key: string, ms: number) => void;
+  setHome: (probeId: string, at: { lat: number; lng: number }) => Promise<string | null>;
 };
 
 const FarmContext = createContext<Farm | null>(null);
 const HANDLED_KEY = "wai-handled-alerts";
 const SNOOZED_KEY = "wai-snoozed-alerts"; // alert key -> time it wakes up
+const PAGE = 1000; // PostgREST row cap per request
+const PAGES = 3; // per probe: ~4 h of a 5 s hardware probe, weeks of a 30 min one
 
-// Position from the probe's GPS module, if its latest reading has a current fix
-function gpsFix(r?: Reading) {
-  const g = r?.raw?.gps as { fix?: boolean; lat?: number; lng?: number } | undefined;
-  return g?.fix && typeof g.lat === "number" && typeof g.lng === "number" ? { lat: g.lat, lng: g.lng } : null;
+// Metric alerts: which measurements each kind watches
+const WATCH: Record<"quality" | "level" | "soil", Metric[]> = {
+  quality: METRICS.filter((m) => m.wq),
+  level: [metric("pct_full")],
+  soil: [metric("soil_pct")],
+};
+
+// 0-100 sub-scores per probe
+const levelScore = (pct?: number | null) => (pct == null ? NaN : Math.min(100, pct * 2));
+const soilScore = (s?: number | null) => (s == null ? NaN : s < 30 ? (s / 30) * 100 : s > 80 ? Math.max(0, ((100 - s) / 20) * 100) : 100);
+const avg = (xs: number[]) => mean(xs.filter((x) => !isNaN(x)));
+// weighted mean over the parts that have data
+function weighted(parts: [number, number][]) {
+  const ok = parts.filter(([x]) => !isNaN(x));
+  const w = ok.reduce((a, [, k]) => a + k, 0);
+  return w ? Math.round(ok.reduce((a, [x, k]) => a + x * k, 0) / w) : 0;
 }
 
 function load<T>(k: string, empty: T): T {
@@ -57,9 +83,20 @@ function save(k: string, v: unknown) {
   } catch {}
 }
 
+async function probeReadings(id: string) {
+  const out: Reading[] = [];
+  for (let p = 0; p < PAGES; p++) {
+    const { data } = await supabase.from("readings").select("*").eq("probe_id", id)
+      .order("created_at", { ascending: false }).range(p * PAGE, p * PAGE + PAGE - 1);
+    out.push(...(data ?? []));
+    if ((data?.length ?? 0) < PAGE) break;
+  }
+  return out;
+}
+
 export function FarmProvider({ children }: { children: React.ReactNode }) {
   const [probes, setProbes] = useState<Probe[]>([]);
-  const [readings, setReadings] = useState<Reading[]>([]); // newest first
+  const [rows, setRows] = useState<Reading[]>([]); // newest first, as stored
   const [loading, setLoading] = useState(true);
   // alerts only exist after readings load, so reading storage here can't cause a hydration mismatch
   const [handled, setHandled] = useState<string[]>(() => load(HANDLED_KEY, []));
@@ -79,19 +116,20 @@ export function FarmProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    Promise.all([
-      supabase.from("probes").select("*").order("name"),
-      supabase.from("readings").select("*").order("created_at", { ascending: false }).limit(2000),
-    ]).then(([p, r]) => {
-      setProbes(p.data ?? []);
-      setReadings(r.data ?? []);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    // per probe, so a 5 s hardware probe can't push the others out of the row cap
+    supabase.from("probes").select("*").order("name")
+      .then(async ({ data }) => {
+        const ps = (data ?? []) as Probe[];
+        const all = (await Promise.all(ps.map((p) => probeReadings(p.id)))).flat();
+        setProbes(ps);
+        setRows(all.sort((a, b) => b.created_at.localeCompare(a.created_at)));
+        setLoading(false);
+      }, () => setLoading(false));
 
     const ch = supabase
       .channel("readings")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "readings" }, (p) =>
-        setReadings((r) => [p.new as Reading, ...r].slice(0, 2000)),
+        setRows((r) => [p.new as Reading, ...r].slice(0, 10000)), // bounded: the 5 s probe adds ~17k rows a day
       )
       .subscribe();
     // re-render so "last seen", online state and snoozes stay fresh
@@ -118,68 +156,106 @@ export function FarmProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const setHome = useCallback(async (probeId: string, at: { lat: number; lng: number }) => {
+    const { error } = await supabase.from("probes").update({ home_lat: at.lat, home_lng: at.lng }).eq("id", probeId);
+    if (!error) setProbes((ps) => ps.map((p) => (p.id === probeId ? { ...p, home_lat: at.lat, home_lng: at.lng } : p)));
+    return error?.message ?? null;
+  }, []);
+
+  const readings = useMemo(() => {
+    const depth = Object.fromEntries(probes.map((p) => [p.id, p.depth_cm]));
+    return rows.map((r) => enrich(r, depth[r.probe_id]));
+  }, [rows, probes]);
+
   const views = useMemo<ProbeView[]>(
     () =>
       probes.map((probe) => {
         const mine = readings.filter((r) => r.probe_id === probe.id);
+        const history = [...mine].reverse();
         const latest = mine[0];
-        const s = score(latest);
-        // The ESP32 probe fills `raw`; seeded probes don't. Place it by its own GPS fix (XC3710),
-        // else next to the phone, else where the probes table says.
-        const fix = gpsFix(latest);
-        const located = fix ? "gps" : here && latest?.raw ? "phone" : null;
+        const hardware = !!latest?.raw;
+        const iv = interval(history);
+        const online = hardware
+          ? now - new Date(latest.created_at).getTime() < Math.max(LIMITS.offlineMinMs, 3 * (iv || 0))
+          : isOnline(latest);
+        const scores = { level: levelScore(latest?.pct_full), soil: soilScore(latest?.soil_pct), quality: score(latest) };
+        const geo = geofence(probe, history);
+        let s = latest ? Math.round(avg([scores.level, scores.soil, scores.quality]) || 0) : 0;
+        if (geo?.moved || (hardware && !online)) s = Math.min(s, 40);
+        // Place a hardware probe by its last good GPS fix (XC3710), else next to the phone,
+        // else where the probes table says.
+        const fix = recentFixes(history)[0] ?? null;
+        const located = fix ? "gps" : here && hardware ? "phone" : null;
         return {
           probe: fix ? { ...probe, ...fix } : located === "phone" ? { ...probe, ...here! } : probe,
           located,
           latest,
-          history: mine.slice(0, 500).reverse(),
+          history,
           score: s,
           status: status(s),
-          online: isOnline(latest),
-          breaches: breaches(latest),
+          online,
+          hardware,
+          interval: iv,
+          scores,
+          emptyIn: timeToEmpty(history),
+          visits: hardware ? visits(history) : [],
+          geo,
         };
       }),
-    [probes, readings, here],
+    [probes, readings, here, now],
   );
 
   const alerts = useMemo<Alert[]>(() => {
     const out: Alert[] = [];
     for (const v of views) {
-      if (!v.latest || !v.breaches.length) continue;
-      // walk back to the first reading of this breach streak
-      const mine = readings.filter((r) => r.probe_id === v.probe.id);
-      let first = mine[0];
-      for (const r of mine) {
-        if (!breaches(r).length) break;
-        first = r;
+      if (!v.latest) continue;
+      const mine = [...v.history].reverse(); // newest first
+      const add = (kind: AlertKind, first: Reading, title: string, detail: string[]) => {
+        const key = `${v.probe.id}:${kind}:${first.id}`;
+        if (handled.includes(key) || (snoozed[key] ?? 0) > now) return;
+        out.push({ id: `${v.probe.id}~${kind}`, key, kind, probe: v.probe, since: first.created_at, reading: v.latest!, title, detail });
+      };
+
+      if (v.hardware && !v.online)
+        add("offline", v.latest, "Probe offline", [`Last heard ${ago(v.latest.created_at)}`, `Usually reports every ${every(v.interval)}`]);
+
+      if (v.geo?.moved) {
+        // walk back to the first fix outside the geofence; readings without a good fix don't break the streak
+        let first = v.latest;
+        for (const r of mine) {
+          const f = goodFix(r);
+          if (!f) continue;
+          if (metres(v.geo.home, f) <= v.geo.radius) break;
+          first = r;
+        }
+        add("moved", first, "Probe moved", [`${Math.round(v.geo.distance)} m from home · geofence ${v.geo.radius} m`]);
       }
-      const key = `${v.probe.id}:${first.id}`;
-      if (handled.includes(key) || (snoozed[key] ?? 0) > now) continue;
-      out.push({ key, probe: v.probe, since: first.created_at, reading: v.latest, breaches: v.breaches });
+
+      for (const kind of ["level", "soil", "quality"] as const) {
+        const cur = issues(v.latest, WATCH[kind]);
+        if (!cur.length) continue;
+        let first = v.latest;
+        for (const r of mine) {
+          if (!issues(r, WATCH[kind]).length) break;
+          first = r;
+        }
+        add(kind, first, cur.map(issueTitle).join(", "), cur.map((i) =>
+          `${i.m.wq ? `${i.m.name} ` : ""}${withUnit(i.m, i.x)}${i.m.key === "pct_full" ? " full" : i.m.key === "soil_pct" ? " moisture" : ""} · limit ${limitText(i.m)}`));
+      }
     }
     return out;
-  }, [views, readings, handled, snoozed, now]);
+  }, [views, handled, snoozed, now]);
 
-  const quality = views.length ? Math.round(views.reduce((a, v) => a + v.score, 0) / views.length) : 0;
-  const level = useMemo(() => {
-    // how close each probe's level is to its own typical level
-    const parts = views
-      .filter((v) => v.latest?.level_cm != null)
-      .map((v) => {
-        const levels = v.history.map((r) => r.level_cm).filter((x): x is number => x != null).sort((a, b) => a - b);
-        const typical = levels[Math.floor(levels.length / 2)] || 1;
-        const drop = Math.max(0, (typical - v.latest!.level_cm!) / typical);
-        return Math.max(0, 100 - drop * 250);
-      });
-    return parts.length ? Math.round(parts.reduce((a, b) => a + b, 0) / parts.length) : 0;
-  }, [views]);
-  const devices = views.length ? Math.round((views.filter((v) => v.online).length / views.length) * 100) : 0;
-  const farmScore = Math.round(quality * 0.7 + level * 0.3);
+  const subScores = {
+    level: Math.round(avg(views.map((v) => v.scores.level)) || 0),
+    soil: Math.round(avg(views.map((v) => v.scores.soil)) || 0),
+    quality: Math.round(avg(views.map((v) => v.scores.quality))), // NaN when no probe measures quality
+    devices: views.length ? Math.round((views.filter((v) => v.online).length / views.length) * 100) : 0,
+  };
+  const farmScore = weighted([[subScores.level, 0.35], [subScores.soil, 0.25], [subScores.quality, 0.2], [subScores.devices, 0.2]]);
 
   return (
-    <FarmContext.Provider
-      value={{ loading, views, readings, farmScore, subScores: { level, quality, devices }, alerts, handle, snooze }}
-    >
+    <FarmContext.Provider value={{ loading, views, readings, farmScore, subScores, alerts, handle, snooze, setHome }}>
       {children}
     </FarmContext.Provider>
   );

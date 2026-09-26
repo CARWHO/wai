@@ -13,7 +13,7 @@ function readCache<T>(k: string): T | null {
 
 // Calls /api/ai once per cache key; results are kept for the browser session.
 // cacheKey is null until the data is loaded, so server and first client render match.
-export function useAI<T>(kind: "alert" | "tip", context: unknown, cacheKey: string | null) {
+export function useAI<T>(kind: "alert" | "tip" | "fertiliser", context: unknown, cacheKey: string | null) {
   const [res, setRes] = useState<{ k: string; d: T } | null>(null);
   const k = cacheKey && `wai-ai:${kind}:${cacheKey}`;
   const cached = k ? readCache<T>(k) : null;

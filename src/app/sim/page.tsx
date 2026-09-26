@@ -5,8 +5,10 @@ import { useEffect, useRef, useState } from "react";
 import { supabase, type Probe } from "@/lib/supabase";
 
 // Stand-in for the ESP32: writes readings to Supabase like the probe would
-type Mode = "clean" | "dirty" | "low";
-const BASE_LEVEL: Record<string, number> = { Dam: 180, "Trough A": 42 };
+type Mode = "clean" | "dirty" | "low" | "dry";
+const BASE_LEVEL: Record<string, number> = { Dam: 180, "Trough A": 24 };
+// paddock soil moisture % around each probe
+const BASE_SOIL: Record<string, number> = { Dam: 66, "Bore 1": 30, "Trough A": 45 };
 const jitter = (n: number, spread: number) => +(n + (Math.random() - 0.5) * spread).toFixed(2);
 
 function reading(probe: Probe, mode: Mode) {
@@ -18,7 +20,8 @@ function reading(probe: Probe, mode: Mode) {
     ph: dirty ? jitter(6.1, 0.2) : jitter(7.2, 0.15),
     tds: dirty ? jitter(760, 40) : jitter(200, 10),
     temp_c: jitter(12.2, 0.4),
-    level_cm: mode === "low" ? jitter(level * 0.45, 2) : jitter(level, 2),
+    level_cm: mode === "low" ? jitter(level * 0.2, 2) : jitter(level, 2),
+    soil_pct: mode === "dry" ? jitter(12, 3) : jitter(BASE_SOIL[probe.name] ?? 40, 3),
   };
 }
 
@@ -45,7 +48,7 @@ export default function Sim() {
     if (!p) return;
     const r = reading(p, m);
     const { error } = await supabase.from("readings").insert(r);
-    const line = `${new Date().toLocaleTimeString()} ${p.name} ${m}: turb ${r.turbidity} · pH ${r.ph} · lvl ${r.level_cm}`;
+    const line = `${new Date().toLocaleTimeString()} ${p.name} ${m}: lvl ${r.level_cm} · soil ${r.soil_pct}% · turb ${r.turbidity}`;
     setLog((l) => [error ? `ERROR ${error.message}` : line, ...l].slice(0, 12));
   }
 
@@ -87,10 +90,11 @@ export default function Sim() {
         {probes.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
       </select>
 
-      <div className="grid grid-cols-3 gap-2">
-        {btn("clean", "Clean", "bg-[#2f9e5b]")}
+      <div className="grid grid-cols-2 gap-2">
+        {btn("clean", "Normal", "bg-[#2f9e5b]")}
         {btn("dirty", "Dirty", "bg-[#d64a3e]")}
         {btn("low", "Low level", "bg-[#e0912f]")}
+        {btn("dry", "Dry soil", "bg-[#8a6a3a]")}
       </div>
 
       <label className="flex items-center justify-between rounded-2xl border border-line bg-white p-4">

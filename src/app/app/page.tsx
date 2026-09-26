@@ -5,22 +5,23 @@ import { useRef, useState } from "react";
 import { useFarm, type ProbeView } from "@/lib/farm";
 import { useAI } from "@/lib/ai";
 import { ago, status, statusColor, statusLabel } from "@/lib/supabase";
-import { HOUR, issues, issueTitle, median, metric, withUnit } from "@/lib/metrics";
-import { Card, Dot, Header, Icon, Label, Ring, Section, Spark } from "@/components/ui";
+import { duration, HOUR, issues, issueTitle, metric, withUnit } from "@/lib/metrics";
+import { Badge, Card, Dot, Header, Icon, Label, Ring, Section, Spark } from "@/components/ui";
 import { Legend, TrendChart } from "@/components/TrendChart";
+import { Wordmark } from "@/components/Koru";
 
 const word = (v: number) => (v >= 80 ? "Good" : v >= 50 ? "Fair" : "Poor");
 const LEVEL = metric("level_cm");
-const TURBIDITY = metric("turbidity");
+const FULL = metric("pct_full");
+const SOIL = metric("soil_pct");
 
-// Level now against the probe's usual level, and the change over the last 24 hours
+// Level now, % full, the change over the last 24 hours and time until empty
 function levelStats(v: ProbeView) {
   const now = v.latest?.level_cm;
   if (now == null) return null;
-  const levels = v.history.map((r) => r.level_cm).filter((x): x is number => x != null);
   const t = new Date(v.latest!.created_at).getTime() - 24 * HOUR;
   const dayAgo = v.history.find((r) => new Date(r.created_at).getTime() >= t)?.level_cm ?? now;
-  return { now, usual: Math.round((now / (median(levels) || now)) * 100), change: now - dayAgo };
+  return { now, full: v.latest?.pct_full ?? NaN, change: now - dayAgo, empty: v.emptyIn };
 }
 
 export default function Home() {
@@ -31,13 +32,21 @@ export default function Home() {
   const online = views.filter((v) => v.online).length;
   const dash = (x: string | number) => (loading ? "–" : x);
 
-  const tipKey = loading ? null : `${Math.round(farmScore / 10)}:${views.map((v) => v.status).join(",")}`;
+  const tipKey = loading ? null : `${Math.round(farmScore / 10)}:${views.map((v) => v.status).join(",")}:${alerts.map((a) => a.id).join(",")}`;
   const tip = useAI<{ title: string; body: string }>(
     "tip",
     {
       farmScore,
       subScores,
-      probes: views.map((v) => ({ name: v.probe.name, score: v.score, problems: v.breaches, level_cm: v.latest?.level_cm })),
+      probes: views.map((v) => ({
+        name: v.probe.name,
+        online: v.online,
+        level_cm: v.latest?.level_cm,
+        pct_full: v.latest?.pct_full != null ? Math.round(v.latest.pct_full) : null,
+        empty_in_h: v.emptyIn != null ? Math.round(v.emptyIn) : null,
+        soil_pct: v.latest?.soil_pct,
+        alerts: alerts.filter((a) => a.probe.id === v.probe.id).map((a) => a.title),
+      })),
     },
     tipKey,
   );
@@ -45,10 +54,11 @@ export default function Home() {
   // Garmin Training Readiness factor grid
   const factors: [string, string][] = [
     [word(subScores.level), "Water level"],
-    [word(subScores.quality), "Water quality"],
+    [word(subScores.soil), "Soil moisture"],
     [`${online} of ${views.length}`, "Probes live"],
     [alerts.length ? `${alerts.length} open` : "None", "Alerts"],
   ];
+  const soilViews = views.filter((v) => v.latest?.soil_pct != null);
   const last24 = (v: ProbeView) => {
     const t = v.latest ? new Date(v.latest.created_at).getTime() - 24 * HOUR : 0;
     return v.history.filter((r) => new Date(r.created_at).getTime() >= t);
@@ -56,26 +66,23 @@ export default function Home() {
 
   return (
     <div className="flex flex-col gap-7">
-      <Header title="Home" right={<Label>Canterbury farm</Label>} />
+      <Header title={<Wordmark />} right={<Label>Canterbury farm</Label>} />
 
       {alerts.length > 0 && (
         <div className="-mt-3 flex flex-col gap-2">
-          {alerts.map((a) => {
-            const first = issues(a.reading)[0];
-            return (
-              <Card key={a.key} href={`/app/alerts/${a.probe.id}`} className="flex items-center gap-3">
-                <div className="flex-1">
-                  <Label className="flex justify-between">
-                    <span className="text-alert">● Alert</span>
-                    <span>{ago(a.since)}</span>
-                  </Label>
-                  <div className="mt-1 font-medium">{a.probe.name}</div>
-                  {first && <div className="font-mono text-[13px] text-alert">{issueTitle(first)} · {withUnit(first.m, first.x)}</div>}
-                </div>
-                <Icon name="chevron" className="h-4 w-4 text-muted" />
-              </Card>
-            );
-          })}
+          {alerts.map((a) => (
+            <Card key={a.key} href={`/app/alerts/${a.id}`} className="flex items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <Label className="flex justify-between">
+                  <span className="text-alert">● Alert</span>
+                  <span>{ago(a.since)}</span>
+                </Label>
+                <div className="mt-1 font-medium">{a.probe.name}</div>
+                <div className="font-mono text-[13px] text-alert">{a.title} · {a.detail[0]}</div>
+              </div>
+              <Icon name="chevron" className="h-4 w-4 text-muted" />
+            </Card>
+          ))}
         </div>
       )}
 
@@ -118,19 +125,24 @@ export default function Home() {
                 <tr className="text-left font-mono text-[11px] uppercase tracking-wider text-muted">
                   <th className="pb-1 font-normal">Probe</th>
                   <th className="pb-1 text-right font-normal">Now</th>
-                  <th className="pb-1 text-right font-normal">Of usual</th>
+                  <th className="pb-1 text-right font-normal">Full</th>
                   <th className="pb-1 text-right font-normal">24 h</th>
+                  <th className="pb-1 text-right font-normal">Empty in</th>
                 </tr>
               </thead>
               <tbody className="font-mono text-[13px]">
                 {views.map((v) => {
                   const l = levelStats(v);
+                  if (!l) return null;
                   return (
                     <tr key={v.probe.id} className="border-t border-line">
                       <td className="py-2 font-sans text-[14px]">{v.probe.name}</td>
-                      <td className="py-2 text-right">{l ? withUnit(LEVEL, l.now) : "–"}</td>
-                      <td className="py-2 text-right" style={{ color: l && l.usual < 80 ? statusColor.bad : undefined }}>{l ? `${l.usual}%` : "–"}</td>
-                      <td className="py-2 text-right">{l ? `${Math.round(l.change) > 0 ? "+" : ""}${Math.round(l.change)}` : "–"}</td>
+                      <td className="py-2 text-right">{withUnit(LEVEL, l.now)}</td>
+                      <td className="py-2 text-right" style={{ color: l.full < FULL.min! ? statusColor.bad : undefined }}>{withUnit(FULL, l.full)}</td>
+                      <td className="py-2 text-right">{`${Math.round(l.change) > 0 ? "+" : ""}${Math.round(l.change)}`}</td>
+                      <td className="py-2 text-right" style={{ color: l.empty != null && l.empty < 24 ? statusColor.bad : undefined }}>
+                        {l.now <= 0 ? "Empty" : l.empty != null ? duration(l.empty) : "Steady"}
+                      </td>
                     </tr>
                   );
                 })}
@@ -139,18 +151,18 @@ export default function Home() {
           </Card>
 
           <Card className="w-full shrink-0 snap-start">
-            <div className="text-[15px] font-medium">Water quality</div>
+            <div className="text-[15px] font-medium">Soil moisture</div>
             <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-[34px] font-medium leading-none tracking-tight tabular-nums">{dash(subScores.quality)}</span>
-              <span className="text-[17px] font-medium" style={{ color: statusColor[status(subScores.quality)] }}>{dash(word(subScores.quality))}</span>
+              <span className="text-[34px] font-medium leading-none tracking-tight tabular-nums">{dash(subScores.soil)}</span>
+              <span className="text-[17px] font-medium" style={{ color: statusColor[status(subScores.soil)] }}>{dash(word(subScores.soil))}</span>
             </div>
-            <Label className="mb-1 mt-3">Turbidity, last 24 h ({TURBIDITY.unit})</Label>
-            <TrendChart m={TURBIDITY} hours={24} height={120} series={views.map((v) => ({ name: v.probe.name, readings: last24(v) }))} />
-            <div className="mt-2"><Legend names={views.map((v) => v.probe.name)} limit /></div>
+            <Label className="mb-1 mt-3">Soil moisture, last 24 h (%)</Label>
+            <TrendChart m={SOIL} hours={24} height={120} series={soilViews.map((v) => ({ name: v.probe.name, readings: last24(v) }))} />
+            <div className="mt-2"><Legend names={soilViews.map((v) => v.probe.name)} limit /></div>
           </Card>
         </div>
         <div className="-mt-1 flex justify-center">
-          {["Farm health", "Water level", "Water quality"].map((name, i) => (
+          {["Farm health", "Water level", "Soil moisture"].map((name, i) => (
             <button
               key={name} aria-label={name} className="grid h-6 w-4 place-items-center"
               onClick={() => focus.current?.scrollTo({ left: i * (focus.current.clientWidth + 16) })}
@@ -165,19 +177,22 @@ export default function Home() {
         <div className="grid grid-cols-2 gap-3">
           {views.map((v) => {
             const bad = issues(v.latest)[0];
+            const full = v.latest?.pct_full;
             return (
               <Card key={v.probe.id} href={`/app/probe/${v.probe.id}`} className="flex flex-col">
                 <div className="flex items-center gap-2 text-[15px] font-medium">
-                  <Dot s={v.status} /> {v.probe.name}
+                  <Dot s={v.status} /> <span className="min-w-0 flex-1 truncate">{v.probe.name}</span>
+                  {v.geo?.moved && <Badge>Moved</Badge>}
                 </div>
-                <div className="mt-3 text-[26px] font-medium leading-none tracking-tight tabular-nums">
+                <div className="mt-3 flex items-baseline text-[26px] font-medium leading-none tracking-tight tabular-nums">
                   {v.latest?.level_cm?.toFixed(0) ?? "–"}<span className="ml-1 font-mono text-[13px] text-muted">cm</span>
+                  {full != null && <span className="ml-auto font-mono text-[13px] text-muted">{Math.round(full)}%</span>}
                 </div>
                 <div className="mt-2"><Spark data={last24(v)} k="level_cm" height={40} /></div>
                 <div className="mt-2 font-mono text-[14px]" style={{ color: bad ? statusColor.bad : undefined }}>
-                  {bad ? issueTitle(bad) : withUnit(TURBIDITY, Number(v.latest?.turbidity ?? NaN))}
+                  {bad ? `${issueTitle(bad)} · ${withUnit(bad.m, bad.x)}` : withUnit(SOIL, v.latest?.soil_pct ?? NaN)}
                 </div>
-                <div className="font-mono text-xs text-muted">{bad ? "Out of limits" : "Turbidity"} · {v.online ? "live" : ago(v.latest?.created_at)}</div>
+                <div className="font-mono text-xs text-muted">{bad ? "Out of limits" : "Soil moisture"} · {v.online ? "live" : ago(v.latest?.created_at)}</div>
               </Card>
             );
           })}

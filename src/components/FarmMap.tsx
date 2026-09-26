@@ -3,7 +3,7 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { useEffect, useRef } from "react";
-import { MapContainer, Marker, TileLayer, useMap } from "react-leaflet";
+import { Circle, MapContainer, Marker, TileLayer, useMap } from "react-leaflet";
 import { statusColor } from "@/lib/supabase";
 import type { ProbeView } from "@/lib/farm";
 
@@ -81,6 +81,15 @@ export default function FarmMap({ views, selected, onSelect, layer = "satellite"
       <FollowLive live={live} />
       <ShowFarm fit={fit} lat={lat} lng={lng} zoom={live ? 17 : 15} />
       <Resize visible={visible} />
+      {/* geofence ring at each probe's home; red once the probe has left it */}
+      {views.map((v) => v.probe.home_lat != null && v.probe.home_lng != null && (
+        <Circle
+          key={`home-${v.probe.id}`}
+          center={[v.probe.home_lat, v.probe.home_lng]}
+          radius={v.probe.geofence_m}
+          pathOptions={{ color: v.geo?.moved ? statusColor.bad : "#f6f5f1", weight: 1.5, dashArray: "4 4", fillOpacity: v.geo?.moved ? 0.15 : 0.08 }}
+        />
+      ))}
       {views.map((v) => (
         <Marker
           key={v.probe.id}

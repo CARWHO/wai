@@ -5,8 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useLayoutEffect } from "react";
 import { useFarm } from "@/lib/farm";
 import { ago, status, statusColor, statusLabel } from "@/lib/supabase";
-import { METRICS, value, withUnit } from "@/lib/metrics";
-import { Dot, Icon, RoundButton, Ring, Row } from "@/components/ui";
+import { METRICS, present, PRIMARY, value, withUnit } from "@/lib/metrics";
+import { Badge, Dot, Icon, RoundButton, Ring, Row } from "@/components/ui";
 import { useLiveMap } from "@/components/LiveMap";
 
 const dark = "grid h-11 w-11 place-items-center rounded-full bg-ink text-paper";
@@ -70,9 +70,14 @@ function Live() {
           {v ? (
             <>
               <div className="mt-2">
-                {METRICS.slice(0, 4).map((m) => (
+                {[...present(v.history, PRIMARY), ...present(v.history.slice(-50), METRICS.filter((m) => m.wq && m.key !== "temp_c"))].map((m) => (
                   <Row key={m.key} k={m.name}>{withUnit(m, value(v.latest, m))}</Row>
                 ))}
+                {v.geo && (
+                  <Row k="From home" sub={`Geofence ${v.geo.radius} m`}>
+                    {v.geo.moved ? <Badge>Moved</Badge> : null} {Math.round(v.geo.distance)} m
+                  </Row>
+                )}
               </div>
               <Link href={`/app/probe/${v.probe.id}`} className="mt-4 block rounded-full bg-ink py-3.5 text-center text-[17px] font-medium text-paper">
                 Open probe
