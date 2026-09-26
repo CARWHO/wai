@@ -1,38 +1,35 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useLayoutEffect } from "react";
 import { useFarm } from "@/lib/farm";
 import { ago, status, statusColor, statusLabel } from "@/lib/supabase";
 import { METRICS, value, withUnit } from "@/lib/metrics";
 import { Dot, Icon, RoundButton, Ring, Row } from "@/components/ui";
-
-const FarmMap = dynamic(() => import("@/components/FarmMap"), { ssr: false });
+import { useLiveMap } from "@/components/LiveMap";
 
 const dark = "grid h-11 w-11 place-items-center rounded-full bg-ink text-paper";
-const chip = "flex items-center gap-2 rounded-full bg-ink px-5 py-3 text-[15px] font-medium text-paper";
+const chip = "pointer-events-auto flex items-center gap-2 rounded-full bg-ink px-5 py-3 text-[15px] font-medium text-paper";
 
 function Live() {
   const { views, farmScore, alerts } = useFarm();
-  const [sheet, setSheet] = useState<string | undefined>(useSearchParams().get("probe") ?? undefined); // "list" or a probe id
-  const [reset, setReset] = useState(0);
-  const [layer, setLayer] = useState<"satellite" | "map">("satellite");
+  // The map itself lives in the app layout (LiveMapProvider), so it survives navigation
+  const { sheet, setSheet, toggleLayer, showFarm } = useLiveMap();
+  const probe = useSearchParams().get("probe") ?? undefined;
+  useLayoutEffect(() => setSheet(probe), [probe, setSheet]);
   const v = views.find((x) => x.probe.id === sheet);
   const live = views.filter((x) => x.online).length;
   const s = status(farmScore);
 
   return (
-    <div className="fixed inset-0 z-0 bg-[#1b2a20]">
-      {views.length > 0 && <FarmMap key={reset} views={views} layer={layer} selected={v?.probe.id} onSelect={setSheet} />}
-
+    <div className="pointer-events-none fixed inset-0 z-[400]">
       {/* Halter Live: round dark buttons either side of the summary pill */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-[400] mx-auto flex max-w-md items-start justify-between gap-2 px-4 pt-[max(16px,env(safe-area-inset-top))]">
         <div className="pointer-events-auto flex flex-col gap-3">
           <Link href="/app" aria-label="Home" className={dark}><Icon name="home" /></Link>
-          <button onClick={() => setReset((n) => n + 1)} aria-label="Show whole farm" className={dark}><Icon name="locate" /></button>
-          <button onClick={() => setLayer((l) => (l === "satellite" ? "map" : "satellite"))} aria-label="Switch map layer" className={dark}><Icon name="layers" /></button>
+          <button onClick={showFarm} aria-label="Show whole farm" className={dark}><Icon name="locate" /></button>
+          <button onClick={toggleLayer} aria-label="Switch map layer" className={dark}><Icon name="layers" /></button>
         </div>
         <div className="pointer-events-auto flex items-center gap-2.5 rounded-full bg-ink py-1 pl-1 pr-4 text-paper">
           <Ring value={farmScore} size={40} stroke={4} color={statusColor[s]} track="#3f3e3a">
@@ -57,7 +54,7 @@ function Live() {
 
       {/* Halter bottom sheet */}
       {sheet && (
-        <div className="absolute inset-x-0 bottom-0 z-[450] mx-auto max-h-[70dvh] max-w-md overflow-y-auto rounded-t-2xl border-t border-line bg-paper px-5 pb-24 pt-5">
+        <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-[450] mx-auto max-h-[70dvh] max-w-md overflow-y-auto rounded-t-2xl border-t border-line bg-paper px-5 pb-24 pt-5">
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="text-[26px] font-medium leading-tight tracking-tight">{v ? v.probe.name : "Probes"}</div>

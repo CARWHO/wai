@@ -91,7 +91,7 @@ export function FarmProvider({ children }: { children: React.ReactNode }) {
     const ch = supabase
       .channel("readings")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "readings" }, (p) =>
-        setReadings((r) => [p.new as Reading, ...r]),
+        setReadings((r) => [p.new as Reading, ...r].slice(0, 2000)),
       )
       .subscribe();
     // re-render so "last seen", online state and snoozes stay fresh

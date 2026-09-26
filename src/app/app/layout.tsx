@@ -2,6 +2,7 @@
 
 import { FarmProvider, useFarm } from "@/lib/farm";
 import { TabBar } from "@/components/ui";
+import { LiveMapProvider } from "@/components/LiveMap";
 
 function Shell({ children }: { children: React.ReactNode }) {
   const { alerts } = useFarm();
@@ -16,7 +17,9 @@ function Shell({ children }: { children: React.ReactNode }) {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <FarmProvider>
-      <Shell>{children}</Shell>
+      <LiveMapProvider>
+        <Shell>{children}</Shell>
+      </LiveMapProvider>
     </FarmProvider>
   );
 }
