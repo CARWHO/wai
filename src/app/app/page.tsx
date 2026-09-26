@@ -33,6 +33,9 @@ export default function Home() {
   const dash = (x: string | number) => (loading ? "–" : x);
 
   const tip = useFarmTip();
+  // when something's wrong, the AI card opens the alert it's talking about (else the first one)
+  const said = tip ? `${tip.title} ${tip.body}` : "";
+  const target = alerts.find((a) => said.includes(a.probe.name)) ?? alerts[0];
 
   // Garmin Training Readiness factor grid
   const factors: [string, string][] = [
@@ -59,34 +62,21 @@ export default function Home() {
         }
       />
 
-      {alerts.length > 0 && (
-        <div className="-mt-3 flex flex-col gap-2">
-          {alerts.map((a) => (
-            <Card key={a.key} href={`/app/alerts/${a.id}`} className="flex items-center gap-3">
+      <Link href={target ? `/app/alerts/${target.id}` : "#"} className={target ? "" : "pointer-events-none"} aria-disabled={!target}>
+        <AICard s={s} note={tip ? (tip.source === "openai" ? "From your probes now" : "Standard guidance") : undefined}>
+          {tip ? (
+            <div className="flex items-center gap-3">
               <div className="min-w-0 flex-1">
-                <Label className="flex justify-between">
-                  <span className="text-alert">● Alert</span>
-                  <span>{ago(a.since)}</span>
-                </Label>
-                <div className="mt-1 font-medium">{a.probe.name}</div>
-                <div className="font-mono text-[13px] text-alert">{a.title} · {a.detail[0]}</div>
+                <div className="text-[22px] font-medium leading-tight tracking-tight">{tip.title}</div>
+                <div className="mt-1 text-[15px] leading-relaxed text-muted">{tip.body}</div>
               </div>
-              <Icon name="chevron" className="h-4 w-4 text-muted" />
-            </Card>
-          ))}
-        </div>
-      )}
-
-      <AICard s={s} note={tip ? (tip.source === "openai" ? "From your probes now" : "Standard guidance") : undefined}>
-        {tip ? (
-          <>
-            <div className="text-[22px] font-medium leading-tight tracking-tight">{tip.title}</div>
-            <div className="mt-1 text-[15px] leading-relaxed text-muted">{tip.body}</div>
-          </>
-        ) : (
-          <AIThinking>Reading every probe…</AIThinking>
-        )}
-      </AICard>
+              {target && <Icon name="chevron" className="h-4 w-4 shrink-0 text-muted" />}
+            </div>
+          ) : (
+            <AIThinking>Reading every probe…</AIThinking>
+          )}
+        </AICard>
+      </Link>
 
       <Section title="In Focus">
         <div
