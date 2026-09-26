@@ -11,8 +11,9 @@ import {
   fmt, hasLimit, HOUR, issues, limitText, mean, metric, present, RANGES, rangeHours, state, value,
   type MetricKey, type Range,
 } from "@/lib/metrics";
-import { Bars, Card, Chips, Dot, Header, Icon, Label, Ring, Row, Segmented, Sparkles } from "@/components/ui";
+import { Bars, Card, Chips, Dot, Header, Icon, Ring, Row, Segmented, Sparkles } from "@/components/ui";
 import { Legend, TrendChart } from "@/components/TrendChart";
+import { AlertList } from "@/components/AlertList";
 
 const DAY = 24 * HOUR;
 type Fertiliser = { verdict: string; reason: string; rain_48h_mm: number | null; soil_pct: number | null; source?: string };
@@ -21,7 +22,7 @@ const VERDICT_COLOR: Record<string, string> = { "Apply now": statusColor.good, "
 function Insights() {
   const router = useRouter();
   const params = useSearchParams();
-  const { views, readings, loading, subScores, demo, setDemo } = useFarm();
+  const { views, readings, loading, alerts, subScores, demo, setDemo } = useFarm();
   const tip = useFarmTip();
   const [mk, setMk] = useState<MetricKey>("pct_full");
   const [range, setRange] = useState<Range>("1d");
@@ -109,7 +110,7 @@ function Insights() {
 
   // Settings-style drill-down (HireOS mobile): groups of rows, each saying what's going on in a line;
   // tap one to open it. `?group=` opens a group's list, `?section=` a detail, so Back closes them.
-  type Item = { id: string; name: string; sub: string; s?: Status; metric?: MetricKey; href?: string; body?: React.ReactNode };
+  type Item = { id: string; name: string; sub: string; s?: Status; ai?: boolean; metric?: MetricKey; href?: string; body?: React.ReactNode };
   const GROUPS: { id: string; title: string; sub?: string; ai?: boolean; items: Item[] }[] = [
     {
       id: "ai", title: "AI analytics", ai: true,
@@ -139,6 +140,11 @@ function Insights() {
         </Card>
           ),
         }] : []),
+        {
+          id: "alerts", name: "Alert analysis", s: (alerts.length ? "bad" : "good") as Status,
+          sub: alerts.length ? `${alerts.length} open · ${alerts[0].probe.name} ${alerts[0].title.toLowerCase()}` : "No open alerts",
+          body: <AlertList />,
+        },
       ],
     },
     {
@@ -238,10 +244,12 @@ function Insights() {
   const worstOf = (items: Item[]): Status | undefined =>
     items.some((x) => x.s === "bad") ? "bad" : items.some((x) => x.s === "watch") ? "watch" : items.some((x) => x.s) ? "good" : undefined;
   const [ai, ...topics] = GROUPS;
+  ai.items.forEach((x) => (x.ai = true));
+  // AI features look like every other row, with the sparkles after the name
   const item = (x: Item, back: string) => (
     <Row
       key={x.id} href={x.href ?? `/app/insights?section=${x.id}&back=${encodeURIComponent(back)}`}
-      k={<span className="flex items-center gap-2">{x.s ? <Dot s={x.s} /> : <span className="w-2" />} {x.name}</span>}
+      k={<span className="flex items-center gap-2">{x.s ? <Dot s={x.s} /> : <span className="w-2" />} {x.name}{x.ai && <Sparkles className="h-3.5 w-3.5 text-healthy" />}</span>}
       sub={<span style={{ color: x.s && x.s !== "good" ? statusColor[x.s] : undefined }}>{x.sub}</span>}
     />
   );
@@ -274,11 +282,8 @@ function Insights() {
   return (
     <div className="flex flex-col gap-7">
       <Header title="Insights" />
-      <section className="-mt-2 rounded-2xl border border-line bg-white px-4 pt-3">
-        <Label className="flex items-center gap-1.5 !text-healthy"><Sparkles className="h-3.5 w-3.5" />{ai.title}</Label>
-        <div className="[&>*:last-child]:border-b-0">{ai.items.map((x) => item(x, "/app/insights"))}</div>
-      </section>
-      <div className="border-t border-line">
+      <div className="-mt-4 border-t border-line">
+        {ai.items.map((x) => item(x, "/app/insights"))}
         {topics.map((g) => {
           const s = worstOf(g.items);
           // a group of one opens straight into it
