@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 790" width="1000" height="790" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="1000" height="790" fill="#fff"/>
+  <text x="500" y="32" text-anchor="middle" font-size="24" font-weight="700" fill="#111">Wai probe wiring (jumpers only)</text>
+
+  <!-- Keyestudio ESP32 (XC3800), BOTTOM view: labelled side, pins up, as mounted in the box. USB at top. -->
+  <rect x="380" y="100" width="240" height="540" rx="10" fill="#111"/>
+  <rect x="470" y="80" width="60" height="30" rx="3" fill="#ccc"/>
+  <text x="540" y="92" font-size="13" fill="#444">USB → laptop</text>
+  <text x="500" y="330" text-anchor="middle" font-size="16" font-weight="700" fill="#f2c200">keyestudio</text>
+  <text x="500" y="352" text-anchor="middle" font-size="14" fill="#f2c200">ESP 32</text>
+  <text x="500" y="372" text-anchor="middle" font-size="11" fill="#bbb">bottom (labelled) side</text>
+
+  <g font-size="12" fill="#f2c200">
+      <text x="418" y="144">5V</text>
+      <text x="418" y="170">CMD</text>
+      <text x="418" y="196">SD3</text>
+      <text x="418" y="222">SD2</text>
+      <text x="418" y="248">IO13</text>
+      <text x="418" y="274">GND</text>
+      <text x="418" y="300">IO12</text>
+      <text x="418" y="326">IO14</text>
+      <text x="418" y="352">IO27</text>
+      <text x="418" y="378">IO26</text>
+      <text x="418" y="404">IO25</text>
+      <text x="418" y="430">IO33</text>
+      <text x="418" y="456">IO32</text>
+      <text x="418" y="482">IO35</text>
+      <text x="418" y="508">IO34</text>
+      <text x="418" y="534">SVN</text>
+      <text x="418" y="560">SVP</text>
+      <text x="418" y="586">EN</text>
+      <text x="418" y="612">3V3</text>
+    <g text-anchor="end">
+      <text x="582" y="144">CLK</text>
+      <text x="582" y="170">SD0</text>
+      <text x="582" y="196">SD1</text>
+      <text x="582" y="222">IO15</text>
+      <text x="582" y="248">IO2</text>
+      <text x="582" y="274">IO0</text>
+      <text x="582" y="300">IO4</text>
+      <text x="582" y="326">IO16</text>
+      <text x="582" y="352">IO17</text>
+      <text x="582" y="378">IO5</text>
+      <text x="582" y="404">IO18</text>
+      <text x="582" y="430">IO19</text>
+      <text x="582" y="456">GND</text>
+      <text x="582" y="482">IO21</text>
+      <text x="582" y="508">RXD0</text>
+      <text x="582" y="534">TXD0</text>
+      <text x="582" y="560">IO22</text>
+      <text x="582" y="586">IO23</text>
+      <text x="582" y="612">GND</text>
+    </g>
+  </g>
+  <g fill="#aaa">
+    <circle cx="400" cy="140" r="5"/><circle cx="400" cy="270" r="5"/><circle cx="400" cy="504" r="5"/><circle cx="400" cy="608" r="5"/>
+    <circle cx="600" cy="374" r="5"/><circle cx="600" cy="400" r="5"/><circle cx="600" cy="452" r="5"/>
+  </g>
+  <g fill="none" stroke="#fff" stroke-width="2">
+    <circle cx="400" cy="140" r="8"/><circle cx="400" cy="270" r="8"/><circle cx="400" cy="504" r="8"/><circle cx="400" cy="608" r="8"/>
+    <circle cx="600" cy="374" r="8"/><circle cx="600" cy="400" r="8"/><circle cx="600" cy="452" r="8"/>
+  </g>
+
+  <!-- HC-SR04 -->
+  <rect x="820" y="150" width="160" height="470" rx="6" fill="#1d5fa8"/>
+  <circle cx="920" cy="225" r="50" fill="#ccc" stroke="#888" stroke-width="4"/>
+  <circle cx="920" cy="545" r="50" fill="#ccc" stroke="#888" stroke-width="4"/>
+  <text x="925" y="300" text-anchor="middle" font-size="15" font-weight="700" fill="#fff">HC-SR04</text>
+  <text x="925" y="318" text-anchor="middle" font-size="12" fill="#dde">XC4442</text>
+  <g font-size="12" fill="#fff">
+    <text x="830" y="326">VCC</text><text x="830" y="378">Trig</text><text x="830" y="404">Echo</text><text x="830" y="456">GND</text>
+  </g>
+
+  <!-- Soil sensor -->
+  <rect x="160" y="420" width="120" height="110" rx="6" fill="#c8202a"/>
+  <rect x="20" y="440" width="150" height="24" fill="#bbb"/>
+  <rect x="20" y="486" width="150" height="24" fill="#bbb"/>
+  <text x="215" y="550" text-anchor="middle" font-size="15" font-weight="700" fill="#111">Soil sensor</text>
+  <text x="215" y="567" text-anchor="middle" font-size="12" fill="#444">XC4604</text>
+  <g font-size="12" fill="#fff" text-anchor="end">
+    <text x="272" y="448">−</text><text x="272" y="478">+</text><text x="272" y="508">S</text>
+  </g>
+
+  <g fill="none" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
+    <!-- soil - to GND -->
+    <path d="M400 270 H320 V444 H280" stroke="#111"/>
+    <!-- soil + to 3V3 -->
+    <path d="M400 608 H350 V474 H280" stroke="#d62828"/>
+    <!-- soil S to IO34, hops over + -->
+    <path d="M400 504 H358 A8 8 0 0 0 342 504 H280" stroke="#1f77d0"/>
+    <!-- HC VCC to 5V, over the top -->
+    <path d="M400 140 H365 V58 H780 V322 H820" stroke="#d62828"/>
+    <!-- Trig to IO5 -->
+    <path d="M600 374 H820" stroke="#f08a00"/>
+    <!-- Echo to IO18 -->
+    <path d="M600 400 H820" stroke="#2a9d3a"/>
+    <!-- GND to GND -->
+    <path d="M600 452 H820" stroke="#111"/>
+  </g>
+
+  <g font-size="14" fill="#222">
+    <text x="30" y="700"><tspan font-weight="700">View:</tspan> board as it sits in the box: labelled side up, pins up, USB toward the notch.</text>
+    <text x="30" y="722"><tspan font-weight="700">No soldering:</tspan> all jumpers direct, female-to-female. Echo (5 V) straight to IO18 is fine for testing.</text>
+    <text x="30" y="744"><tspan font-weight="700">Colours:</tspan> red = power, black = GND, orange = Trig, green = Echo, blue = soil signal.</text>
+    <text x="30" y="766"><tspan font-weight="700">Power:</tspan> HC-SR04 on 5V. Soil sensor on 3V3.</text>
+  </g>
+</svg>

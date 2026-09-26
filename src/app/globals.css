@@ -1,0 +1,25 @@
+@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;
+
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
+@import '@astryxdesign/core/reset.css';
+@import '@astryxdesign/core/astryx.css';
+@import '@astryxdesign/theme-matcha/theme.css';
+@import '@astryxdesign/core/tailwind-theme.css';
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+/* Halter / Garmin style: flat, light, system sans */
+:root {
+  --wai-font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+  --wai-card: #f2f2f4;
+  --wai-line: #e5e5ea;
+  --wai-muted: #6b6b70;
+  --wai-bad: #d23c32;
+}
+html, body { background: #fff; color: #111; }
+html, body, h1, h2, h3, button, input, select { font-family: var(--wai-font); }
+body { padding-top: env(safe-area-inset-top); }
+/* the Matcha theme wrapper tints text olive; keep it neutral */
+main, main h1, main h2, main h3 { color: #111; }
+h1, h2, h3 { letter-spacing: -0.01em; }
+
