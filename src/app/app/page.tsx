@@ -8,7 +8,7 @@ import { ago, status, statusColor, statusLabel } from "@/lib/supabase";
 import { duration, HOUR, issues, issueTitle, metric, withUnit } from "@/lib/metrics";
 import { Badge, Card, Dot, Header, Icon, Label, Ring, RoundButton, Section, Spark } from "@/components/ui";
 import { signOut } from "@/lib/auth";import { Legend, TrendChart } from "@/components/TrendChart";
-import { Koru, Wordmark } from "@/components/Koru";
+import { Wordmark } from "@/components/Koru";
 
 const word = (v: number) => (v >= 80 ? "Good" : v >= 50 ? "Fair" : "Poor");
 const LEVEL = metric("level_cm");
@@ -25,7 +25,7 @@ function levelStats(v: ProbeView) {
 }
 
 export default function Home() {
-  const { loading, views, farmScore, subScores, alerts, demo } = useFarm();
+  const { loading, views, farmScore, subScores, alerts } = useFarm();
   const [page, setPage] = useState(0);
   const focus = useRef<HTMLDivElement>(null);
   const s = status(farmScore);
@@ -50,8 +50,7 @@ export default function Home() {
   return (
     <div className="flex flex-col gap-7">
       <Header
-        // demo mode drops the word, leaving the koru: a tell only we know
-        title={demo ? <span className="flex h-7 items-center"><Koru className="size-6" /></span> : <Wordmark />}
+        title={<Wordmark />}
         right={
           <div className="flex items-center gap-3">
             <Label>UC farm</Label>
