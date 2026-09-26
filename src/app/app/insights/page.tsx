@@ -11,7 +11,7 @@ import {
   fmt, hasLimit, HOUR, issues, limitText, mean, metric, present, RANGES, rangeHours, state, value,
   type MetricKey, type Range,
 } from "@/lib/metrics";
-import { Bars, Card, Chips, Dot, Header, Icon, Ring, Row, Segmented, Sparkles } from "@/components/ui";
+import { AICard, AIThinking, Bars, Card, Chips, Dot, Header, Icon, Ring, Row, Segmented, Sparkles } from "@/components/ui";
 import { Legend, TrendChart } from "@/components/TrendChart";
 import { AlertList } from "@/components/AlertList";
 
@@ -22,7 +22,7 @@ const VERDICT_COLOR: Record<string, string> = { "Apply now": statusColor.good, "
 function Insights() {
   const router = useRouter();
   const params = useSearchParams();
-  const { views, readings, loading, alerts, subScores, demo, setDemo } = useFarm();
+  const { views, readings, loading, alerts, subScores, farmScore, demo, setDemo } = useFarm();
   const tip = useFarmTip();
   const [mk, setMk] = useState<MetricKey>("pct_full");
   const [range, setRange] = useState<Range>("1d");
@@ -118,26 +118,40 @@ function Insights() {
         {
           id: "today", name: "Today on the farm", sub: tip?.title ?? "Thinking…",
           body: (
-            <Card className="flex flex-col gap-2">
-              <div className="text-[24px] font-medium leading-tight tracking-tight">{tip?.title ?? "Thinking…"}</div>
-              {tip && <div className="text-[15px] leading-relaxed">{tip.body}</div>}
-            </Card>
+            <AICard s={status(farmScore)} note={tip ? (tip.source === "openai" ? "From your probes now" : "Standard guidance") : undefined}>
+              {tip ? (
+                <div className="flex flex-col gap-2">
+                  <div className="text-[24px] font-medium leading-tight tracking-tight">{tip.title}</div>
+                  <div className="text-[15px] leading-relaxed">{tip.body}</div>
+                </div>
+              ) : (
+                <AIThinking>Reading every probe…</AIThinking>
+              )}
+            </AICard>
           ),
         },
         ...(!isNaN(soil) ? [{
           id: "fertiliser", name: "Fertiliser timing", s: fertS,
           sub: fert ? `${fert.verdict} · soil ${Math.round(soil)}%` : "Checking the forecast…",
           body: (
-        <Card className="flex flex-col gap-2">
-          <div className="text-[24px] font-medium leading-tight tracking-tight" style={{ color: fert ? VERDICT_COLOR[fert.verdict] ?? statusColor.bad : undefined }}>
-            {fert?.verdict ?? "Checking the forecast…"}
-          </div>
-          {fert && <div className="text-[15px] leading-relaxed">{fert.reason}</div>}
+        <AICard s={fertS} note={fert ? (fert.source === "openai" ? "Soil + rain forecast" : "Standard guidance") : undefined}>
+          <div className="flex flex-col gap-2">
+          {fert ? (
+            <>
+              <div className="text-[24px] font-medium leading-tight tracking-tight" style={{ color: VERDICT_COLOR[fert.verdict] ?? statusColor.bad }}>
+                {fert.verdict}
+              </div>
+              <div className="text-[15px] leading-relaxed">{fert.reason}</div>
+            </>
+          ) : (
+            <AIThinking>Checking the rain forecast…</AIThinking>
+          )}
           <div className="mt-1 flex justify-between border-t border-line pt-2 font-mono text-xs text-muted">
             <span>Soil {Math.round(soil)}% avg</span>
             <span>{fert?.rain_48h_mm != null ? `${fert.rain_48h_mm} mm rain next 48 h` : fert ? "Forecast unavailable" : ""}</span>
           </div>
-        </Card>
+          </div>
+        </AICard>
           ),
         }] : []),
         {

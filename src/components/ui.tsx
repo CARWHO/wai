@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Area, AreaChart, ResponsiveContainer, YAxis } from "recharts";
 import { statusColor, type Reading, type Status } from "@/lib/supabase";
+import { Koru } from "@/components/Koru";
 
 export function Ring({ value, size = 160, stroke = 12, color, track = "#e3e1da", children }: {
   value: number; size?: number; stroke?: number; color: string; track?: string; children?: React.ReactNode;
@@ -92,6 +93,38 @@ export function Section({ title, action, children }: { title: string; action?: R
 // Small mono caption: units, eyebrows, table headers
 export function Label({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return <div className={`font-mono text-xs uppercase tracking-wider text-muted ${className}`}>{children}</div>;
+}
+
+// "Wai AI" card: the landing page's koru and label on a white card with a soft light,
+// coloured by status (green, amber, red)
+export function AICard({ children, note, s = "good", className = "" }: { children: React.ReactNode; note?: React.ReactNode; s?: Status; className?: string }) {
+  const c = statusColor[s];
+  return (
+    <div className={`relative overflow-hidden rounded-2xl border border-line bg-white p-4 ${className}`} style={{ "--ai": c } as React.CSSProperties}>
+      <span className="absolute left-4 top-0 h-0.5 w-6" style={{ background: c }} />
+      <span aria-hidden="true" className="pointer-events-none absolute -left-6 -top-6 h-32 w-32 rounded-full blur-3xl motion-safe:animate-[ai-glow_4s_ease-in-out_infinite]" style={{ background: `${c}26` }} />
+      <div className="relative flex items-center gap-2" style={{ color: c }}>
+        <Koru className="block h-5 w-5" />
+        <span className="font-mono text-xs uppercase tracking-wider">Wai AI</span>
+        {note && <span className="ml-auto font-mono text-[11px] text-muted">{note}</span>}
+      </div>
+      <div className="relative mt-3">{children}</div>
+    </div>
+  );
+}
+
+// "Next" action line, as on the landing page's alert cells, in the AICard's status colour
+export function AINext({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="whitespace-pre-line text-[15px] font-medium leading-relaxed text-[var(--ai,#3a9d5d)]">
+      <span className="font-mono text-xs uppercase tracking-wider">Next</span> {children}
+    </div>
+  );
+}
+
+// Shown on an AICard while the model answers
+export function AIThinking({ children }: { children: React.ReactNode }) {
+  return <div className="text-[15px] text-muted motion-safe:animate-pulse">{children}</div>;
 }
 
 // Label / value row with a hairline divider

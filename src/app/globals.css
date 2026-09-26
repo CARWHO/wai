@@ -20,3 +20,5 @@ html, body { background: var(--color-paper); color: var(--color-ink); }
 body { font-family: var(--font-sans); padding-top: env(safe-area-inset-top); -webkit-font-smoothing: antialiased; }
 h1, h2, h3 { letter-spacing: -0.01em; text-wrap: balance; }
 p, li, blockquote { text-wrap: pretty; }
+
+@keyframes ai-glow { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }

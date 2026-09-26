@@ -6,7 +6,7 @@ import { useFarm, type ProbeView } from "@/lib/farm";
 import { useFarmTip } from "@/lib/tip";
 import { ago, status, statusColor, statusLabel } from "@/lib/supabase";
 import { duration, HOUR, issues, issueTitle, metric, withUnit } from "@/lib/metrics";
-import { Badge, Card, Dot, Header, Icon, Label, Ring, RoundButton, Section, Spark } from "@/components/ui";
+import { AICard, AIThinking, Badge, Card, Dot, Header, Icon, Label, Ring, RoundButton, Section, Spark } from "@/components/ui";
 import { signOut } from "@/lib/auth";import { Legend, TrendChart } from "@/components/TrendChart";
 import { Wordmark } from "@/components/Koru";
 
@@ -77,6 +77,17 @@ export default function Home() {
         </div>
       )}
 
+      <AICard s={s} note={tip ? (tip.source === "openai" ? "From your probes now" : "Standard guidance") : undefined}>
+        {tip ? (
+          <>
+            <div className="text-[22px] font-medium leading-tight tracking-tight">{tip.title}</div>
+            <div className="mt-1 text-[15px] leading-relaxed text-muted">{tip.body}</div>
+          </>
+        ) : (
+          <AIThinking>Reading every probe…</AIThinking>
+        )}
+      </AICard>
+
       <Section title="In Focus">
         <div
           ref={focus}
@@ -92,7 +103,6 @@ export default function Home() {
               </Ring>
               <div className="min-w-0">
                 <div className="text-[24px] font-medium leading-tight tracking-tight">{dash(statusLabel[s])}</div>
-                <div className="mt-0.5 text-[14px] leading-snug text-muted">{loading ? "" : tip?.body ?? ""}</div>
               </div>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3">

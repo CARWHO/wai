@@ -7,7 +7,7 @@ import { useAI } from "./ai";
 export function useFarmTip() {
   const { loading, views, farmScore, subScores, alerts } = useFarm();
   const key = loading ? null : `${Math.round(farmScore / 10)}:${views.map((v) => v.status).join(",")}:${alerts.map((a) => a.id).join(",")}`;
-  return useAI<{ title: string; body: string }>(
+  return useAI<{ title: string; body: string; source?: string }>(
     "tip",
     {
       farmScore,
