@@ -13,9 +13,10 @@
   --color-mint: #dcefe0;
 
   --font-sans: var(--font-geist), system-ui, sans-serif;
-  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
 html, body { background: var(--color-paper); color: var(--color-ink); }
 body { font-family: var(--font-sans); padding-top: env(safe-area-inset-top); -webkit-font-smoothing: antialiased; }
-h1, h2, h3 { letter-spacing: -0.01em; }
+h1, h2, h3 { letter-spacing: -0.01em; text-wrap: balance; }
+p, li, blockquote { text-wrap: pretty; }
