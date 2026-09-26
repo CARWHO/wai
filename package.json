@@ -9,9 +9,6 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@astryxdesign/core": "^0.6.3",
-    "@astryxdesign/theme-matcha": "^0.6.3",
-    "@stylexjs/stylex": "^0.19.1",
     "@supabase/supabase-js": "^2.117.2",
     "leaflet": "^1.9.4",
     "next": "16.3.6",

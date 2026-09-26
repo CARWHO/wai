@@ -48,14 +48,14 @@ export default function InsightsPage() {
       <Section title="Time within limits">
         <div className="-mx-4 flex gap-3 overflow-x-auto px-4 [scrollbar-width:none]">
           {cards.map((c) => (
-            <Card key={c.name} href="/app/report" className="w-[46%] min-w-[160px] shrink-0">
+            <Card key={c.name} href="/app/report" className="w-[46%] min-w-[160px] shrink-0 border-line">
               <Ring value={c.pct} size={44} stroke={4} color={statusColor[c.pct >= 95 ? "good" : c.pct >= 80 ? "watch" : "bad"]}>
-                <span className="text-[11px] font-bold">{c.pct}%</span>
+                <span className="font-mono text-[10px]">{c.pct}%</span>
               </Ring>
-              <div className="mt-2 text-[15px] text-[var(--wai-muted)]">{c.name}</div>
-              <div className="text-[32px] font-bold leading-tight tabular-nums">{c.n}</div>
-              <div className="text-[14px]">readings</div>
-              <div className="mt-3 flex items-center justify-between whitespace-nowrap border-t border-[var(--wai-line)] pt-2 text-[13px] font-semibold">
+              <div className="mt-2 font-mono text-xs uppercase tracking-wider text-muted">{c.name}</div>
+              <div className="text-[32px] font-medium leading-tight tracking-tight tabular-nums">{c.n}</div>
+              <div className="font-mono text-xs text-muted">readings</div>
+              <div className="mt-3 flex items-center justify-between whitespace-nowrap border-t border-line pt-2 font-mono text-xs">
                 {c.bad} outside limits <Icon name="chevron" className="h-4 w-4" />
               </div>
             </Card>
@@ -65,21 +65,21 @@ export default function InsightsPage() {
 
       <Section title={`Average ${m.name === "pH" ? "pH" : m.name.toLowerCase()}`}>
         <Chips options={CHIPS} value={mk} onChange={setMk} />
-        <div className="grid grid-cols-3 divide-x divide-[var(--wai-line)]">
+        <div className="grid grid-cols-3 divide-x divide-line">
           <div className="pr-3">
-            <div className="text-[14px] text-[var(--wai-muted)]">Today</div>
-            <div className="text-[30px] font-bold leading-tight tabular-nums">{fmt(m, today)}</div>
-            <div className="text-[12px] text-[var(--wai-muted)]">{m.unit || "pH"}</div>
+            <div className="font-mono text-xs uppercase tracking-wider text-muted">Today</div>
+            <div className="text-[30px] font-medium leading-tight tracking-tight tabular-nums">{fmt(m, today)}</div>
+            <div className="font-mono text-xs text-muted">{m.unit || "pH"}</div>
           </div>
           <div className="px-3">
-            <div className="text-[14px] text-[var(--wai-muted)]">Last 7d</div>
-            <div className="text-[18px] font-bold leading-tight tabular-nums">{fmt(m, week)}</div>
-            <div className="text-[12px] text-[var(--wai-muted)]">{m.unit || "pH"}</div>
+            <div className="font-mono text-xs uppercase tracking-wider text-muted">Last 7d</div>
+            <div className="text-[18px] font-medium leading-tight tracking-tight tabular-nums">{fmt(m, week)}</div>
+            <div className="font-mono text-xs text-muted">{m.unit || "pH"}</div>
           </div>
           <div className="pl-3">
-            <div className="text-[14px] text-[var(--wai-muted)]">Limit</div>
-            <div className="text-[18px] font-bold leading-tight tabular-nums">{hasLimit(m) ? limitText(m).replace(` ${m.unit}`, "") : "None"}</div>
-            <div className="text-[12px] text-[var(--wai-muted)]">{hasLimit(m) ? m.unit || "pH" : "varies by probe"}</div>
+            <div className="font-mono text-xs uppercase tracking-wider text-muted">Limit</div>
+            <div className="text-[18px] font-medium leading-tight tracking-tight tabular-nums">{hasLimit(m) ? limitText(m).replace(` ${m.unit}`, "") : "None"}</div>
+            <div className="font-mono text-xs text-muted">{hasLimit(m) ? m.unit || "pH" : "varies by probe"}</div>
           </div>
         </div>
         <Segmented options={RANGES} value={range} onChange={setRange} />
@@ -94,24 +94,24 @@ export default function InsightsPage() {
         <div className="-mx-4 overflow-x-auto px-4">
           <table className="w-full text-[14px]">
             <thead>
-              <tr className="text-left text-[12px] text-[var(--wai-muted)]">
+              <tr className="text-left font-mono text-[11px] uppercase tracking-wider text-muted">
                 <th className="pb-1.5 font-normal">Probe</th>
                 {TABLE.map((x) => (
                   <th key={x.key} className="pb-1.5 text-right font-normal">{x.name}{x.unit && <div>{x.unit}</div>}</th>
                 ))}
               </tr>
             </thead>
-            <tbody className="tabular-nums">
+            <tbody className="font-mono text-[13px]">
               {views.map((v) => (
-                <tr key={v.probe.id} onClick={() => router.push(`/app/probe/${v.probe.id}`)} className="cursor-pointer border-t border-[var(--wai-line)]">
+                <tr key={v.probe.id} onClick={() => router.push(`/app/probe/${v.probe.id}`)} className="cursor-pointer border-t border-line">
                   <td className="py-3 pr-2">
-                    <span className="flex items-center gap-2 font-medium"><Dot s={v.status} /> {v.probe.name}</span>
+                    <span className="flex items-center gap-2 font-sans text-[14px] font-medium"><Dot s={v.status} /> {v.probe.name}</span>
                   </td>
                   {TABLE.map((x) => {
                     const n = value(v.latest, x);
                     const out = !isNaN(n) && state(x, n) !== "Normal";
                     return (
-                      <td key={x.key} className={`py-3 pl-2 text-right ${out ? "font-bold" : ""}`} style={{ color: out ? statusColor.bad : undefined }}>
+                      <td key={x.key} className={`py-3 pl-2 text-right ${out ? "font-medium" : ""}`} style={{ color: out ? statusColor.bad : undefined }}>
                         {fmt(x, n)}
                       </td>
                     );
@@ -126,10 +126,10 @@ export default function InsightsPage() {
       <Card href="/app/report" className="flex items-center gap-3">
         <Icon name="doc" />
         <div className="flex-1">
-          <div className="font-semibold">Compliance report</div>
-          <div className="text-[13px] text-[var(--wai-muted)]">Printable water quality record</div>
+          <div className="font-medium">Compliance report</div>
+          <div className="font-mono text-xs text-muted">Printable water quality record</div>
         </div>
-        <Icon name="chevron" className="h-4 w-4 text-[#aeaeb2]" />
+        <Icon name="chevron" className="h-4 w-4 text-muted" />
       </Card>
     </div>
   );

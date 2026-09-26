@@ -4,7 +4,7 @@
 
 | Layer | Choice |
 |---|---|
-| App | Next.js + Astryx + Tailwind, installable PWA |
+| App | Next.js + Tailwind, installable PWA. Same tokens and fonts as the landing page (wai-web) |
 | Hosting | Vercel (auto-deploy on push) |
 | Backend | Supabase: Postgres, auth, Realtime |
 | Hardware | ESP32 + sensors → Supabase REST over Wi-Fi |
@@ -16,16 +16,15 @@
 
 | Need | Library |
 |---|---|
-| Framework | `next` (React 19, required by Astryx) |
-| UI | [Astryx](https://astryx.atmeta.com/) by Meta: `@astryxdesign/core` + `@astryxdesign/theme-matcha`. Same as desktop app |
-| Styling overrides | Tailwind via `className` |
+| Framework | `next` (React 19) |
+| UI | Own components in `src/components/ui.tsx`, styled with the landing page tokens (paper, ink, muted, line, healthy, alert) |
+| Styling | Tailwind v4; Geist for text, JetBrains Mono for labels, units and readings |
 | Backend / live data | `@supabase/supabase-js` |
 | AI | `openai` (API route) |
 | Map | `react-leaflet` + Esri satellite tiles (free, no key) |
-| Charts | `recharts`, unless Astryx has charts |
+| Charts | `recharts` |
 | PWA | Next built-in `app/manifest.ts` |
 
-Astryx is desktop-first and in beta. Mobile pieces (bottom tab bar, bottom sheet) may need building ourselves.
 
 ## Data flow
 

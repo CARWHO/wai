@@ -28,27 +28,27 @@ export default function ReportPage() {
   const d = (iso?: string) => (iso ? new Date(iso).toLocaleString("en-NZ", { dateStyle: "medium", timeStyle: "short" }) : "–");
 
   return (
-    <div className="flex flex-col gap-4 print:text-black">
+    <div className="flex flex-col gap-4 print:text-ink">
       <div className="print:hidden">
         <Header
           title="Report"
           back="/app/insights"
           right={
-            <button onClick={() => window.print()} className="flex items-center gap-1.5 rounded-full bg-[#111] px-4 py-2 text-[14px] font-semibold text-white">
+            <button onClick={() => window.print()} className="flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-[14px] font-medium text-paper">
               <Icon name="download" className="h-4 w-4" /> Save PDF
             </button>
           }
         />
       </div>
 
-      <div className="text-[14px] text-black">
-        <div className="border-b border-black/10 pb-3">
-          <div className="text-[24px] font-bold">Water quality record</div>
-          <div className="text-black/60">Canterbury farm</div>
-          <div className="text-black/60">{d(from)} to {d(to)}</div>
+      <div className="text-[14px] text-ink">
+        <div className="border-b border-line pb-3">
+          <div className="text-[24px] font-medium tracking-tight">Water quality record</div>
+          <div className="text-muted">Canterbury farm</div>
+          <div className="text-muted">{d(from)} to {d(to)}</div>
         </div>
 
-        <div className="mt-3 text-black/70">
+        <div className="mt-3 text-muted">
           Limits applied: turbidity ≤ {LIMITS.turbidity} NTU · pH {LIMITS.phMin}–{LIMITS.phMax} · TDS ≤ {LIMITS.tds} ppm.
           {" "}Readings are logged automatically by in-water probes.
         </div>
@@ -61,26 +61,26 @@ export default function ReportPage() {
           return (
             <div key={v.probe.id} className="mt-4 break-inside-avoid">
               <div className="flex items-center justify-between">
-                <div className="text-[15px] font-semibold">{v.probe.name}</div>
-                <div className="text-[13px] font-semibold" style={{ color: ev ? statusColor.bad : statusColor.good }}>
+                <div className="text-[15px] font-medium">{v.probe.name}</div>
+                <div className="text-[13px] font-medium" style={{ color: ev ? statusColor.bad : statusColor.good }}>
                   {ev ? `${ev} exceedance${ev > 1 ? "s" : ""}` : "Compliant"}
                 </div>
               </div>
               <table className="mt-1 w-full">
-                <tbody className="[&_td]:border-b [&_td]:border-black/5 [&_td]:py-1 [&_td:first-child]:text-black/60">
+                <tbody className="[&_td]:border-b [&_td]:border-line [&_td]:py-1 [&_td:first-child]:text-muted">
                   <tr><td>Readings</td><td className="text-right">{rs.length} · {pct.toFixed(1)}% within limits</td></tr>
-                  <tr><td>Turbidity (NTU)</td><td className="text-right tabular-nums">{fmt(stats(rs.map((r) => r.turbidity)))}</td></tr>
-                  <tr><td>pH</td><td className="text-right tabular-nums">{fmt(stats(rs.map((r) => r.ph)), 2)}</td></tr>
-                  <tr><td>TDS (ppm)</td><td className="text-right tabular-nums">{fmt(stats(rs.map((r) => r.tds)), 0)}</td></tr>
-                  <tr><td>Level (cm)</td><td className="text-right tabular-nums">{fmt(stats(rs.map((r) => r.level_cm)), 0)}</td></tr>
-                  <tr><td>Temp (°C)</td><td className="text-right tabular-nums">{fmt(stats(rs.map((r) => r.temp_c)))}</td></tr>
+                  <tr><td>Turbidity (NTU)</td><td className="text-right font-mono">{fmt(stats(rs.map((r) => r.turbidity)))}</td></tr>
+                  <tr><td>pH</td><td className="text-right font-mono">{fmt(stats(rs.map((r) => r.ph)), 2)}</td></tr>
+                  <tr><td>TDS (ppm)</td><td className="text-right font-mono">{fmt(stats(rs.map((r) => r.tds)), 0)}</td></tr>
+                  <tr><td>Level (cm)</td><td className="text-right font-mono">{fmt(stats(rs.map((r) => r.level_cm)), 0)}</td></tr>
+                  <tr><td>Temp (°C)</td><td className="text-right font-mono">{fmt(stats(rs.map((r) => r.temp_c)))}</td></tr>
                 </tbody>
               </table>
             </div>
           );
         })}
 
-        <div className="mt-5 border-t border-black/10 pt-3 text-[11px] text-black/50">
+        <div className="mt-5 border-t border-line pt-3 text-[11px] text-muted">
           Generated {d(new Date().toISOString())} by Wai. Source data is stored and available on request.
         </div>
       </div>

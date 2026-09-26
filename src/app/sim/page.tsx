@@ -69,7 +69,7 @@ export default function Sim() {
         setMode(m);
         send(m);
       }}
-      className={`rounded-[18px] py-5 text-[17px] font-semibold text-white ${cls} ${mode === m ? "ring-4 ring-black/20" : "opacity-80"}`}
+      className={`rounded-[18px] py-5 text-[17px] font-semibold text-paper ${cls} ${mode === m ? "ring-4 ring-black/20" : "opacity-80"}`}
     >
       {label}
     </button>
@@ -78,12 +78,12 @@ export default function Sim() {
   return (
     <main className="mx-auto flex max-w-md flex-col gap-4 p-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-[28px] font-bold">Probe simulator</h1>
+        <h1 className="text-[28px] font-medium tracking-tight">Probe simulator</h1>
         <Link href="/app" className="text-[14px] font-medium text-[#1f6b3f]">Open app →</Link>
       </div>
-      <p className="text-[14px] text-[var(--wai-muted)]">Stands in for the ESP32. Each tap writes one reading to Supabase; the app updates live.</p>
+      <p className="text-[14px] text-muted">Stands in for the ESP32. Each tap writes one reading to Supabase; the app updates live.</p>
 
-      <select value={probeId} onChange={(e) => setProbeId(e.target.value)} className="rounded-[12px] bg-[var(--wai-card)] p-3 text-[16px]">
+      <select value={probeId} onChange={(e) => setProbeId(e.target.value)} className="rounded-2xl border border-line bg-white p-3 text-[16px]">
         {probes.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
       </select>
 
@@ -93,10 +93,10 @@ export default function Sim() {
         {btn("low", "Low level", "bg-[#e0912f]")}
       </div>
 
-      <label className="flex items-center justify-between rounded-[12px] bg-[var(--wai-card)] p-4">
+      <label className="flex items-center justify-between rounded-2xl border border-line bg-white p-4">
         <span>
           <div className="font-medium">Stream every 3 s</div>
-          <div className="text-[13px] text-[var(--wai-muted)]">All probes report; the selected one uses the mode above</div>
+          <div className="text-[13px] text-muted">All probes report; the selected one uses the mode above</div>
         </span>
         <input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} className="h-6 w-6 accent-[#1f6b3f]" />
       </label>

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { Area, AreaChart, ResponsiveContainer, YAxis } from "recharts";
 import { statusColor, type Reading, type Status } from "@/lib/supabase";
 
-export function Ring({ value, size = 160, stroke = 12, color, track = "#e5e5ea", children }: {
+export function Ring({ value, size = 160, stroke = 12, color, track = "#e3e1da", children }: {
   value: number; size?: number; stroke?: number; color: string; track?: string; children?: React.ReactNode;
 }) {
   const r = (size - stroke) / 2;
@@ -25,10 +25,10 @@ export function Ring({ value, size = 160, stroke = 12, color, track = "#e5e5ea",
 }
 
 export function Dot({ s }: { s: Status }) {
-  return <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: statusColor[s] }} />;
+  return <span className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ background: statusColor[s] }} />;
 }
 
-export function Spark({ data, k, color = "#111", height = 64 }: {
+export function Spark({ data, k, color = "#141412", height = 64 }: {
   data: Reading[]; k: keyof Reading; color?: string; height?: number;
 }) {
   return (
@@ -36,14 +36,14 @@ export function Spark({ data, k, color = "#111", height = 64 }: {
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
           <YAxis hide domain={["dataMin", "dataMax"]} />
-          <Area type="monotone" dataKey={k as string} stroke={color} strokeWidth={2} fill="none" isAnimationActive={false} />
+          <Area type="monotone" dataKey={k as string} stroke={color} strokeWidth={1.5} fill="none" isAnimationActive={false} />
         </AreaChart>
       </ResponsiveContainer>
     </div>
   );
 }
 
-// Halter page header: big bold title, optional back chevron, right slot
+// Page header: big title, optional back chevron, right slot
 export function Header({ title, back, right }: { title: string; back?: string; right?: React.ReactNode }) {
   return (
     <div className="flex min-h-[64px] items-center justify-between gap-3 pt-4">
@@ -53,16 +53,16 @@ export function Header({ title, back, right }: { title: string; back?: string; r
             <Icon name="back" />
           </Link>
         )}
-        <h1 className={back ? "text-[20px] font-bold" : "text-[32px] font-bold tracking-tight"}>{title}</h1>
+        <h1 className={back ? "text-[20px] font-medium" : "text-[32px] font-medium tracking-tight"}>{title}</h1>
       </div>
       {right}
     </div>
   );
 }
 
-// Round grey icon button (Halter ⋯ / ×)
+// Round outlined icon button (Halter ⋯ / ×)
 export function RoundButton({ icon, label, onClick, href }: { icon: string; label: string; onClick?: () => void; href?: string }) {
-  const cls = "grid h-10 w-10 place-items-center rounded-full bg-[var(--wai-card)]";
+  const cls = "grid h-10 w-10 place-items-center rounded-full border border-line bg-white";
   return href ? (
     <Link href={href} aria-label={label} className={cls}><Icon name={icon} /></Link>
   ) : (
@@ -70,8 +70,9 @@ export function RoundButton({ icon, label, onClick, href }: { icon: string; labe
   );
 }
 
+// White card with a hairline border on the paper background, as on the landing page
 export function Card({ children, className = "", href }: { children: React.ReactNode; className?: string; href?: string }) {
-  const cls = `block rounded-[16px] bg-[var(--wai-card)] p-4 ${className}`;
+  const cls = `block rounded-2xl border border-line bg-white p-4 ${className}`;
   return href ? <Link href={href} className={cls}>{children}</Link> : <div className={cls}>{children}</div>;
 }
 
@@ -80,12 +81,17 @@ export function Section({ title, action, children }: { title: string; action?: R
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-baseline justify-between">
-        <h2 className="text-[20px] font-bold">{title}</h2>
+        <h2 className="text-[20px] font-medium tracking-tight">{title}</h2>
         {action}
       </div>
       {children}
     </section>
   );
+}
+
+// Small mono caption: units, eyebrows, table headers
+export function Label({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return <div className={`font-mono text-xs uppercase tracking-wider text-muted ${className}`}>{children}</div>;
 }
 
 // Label / value row with a hairline divider
@@ -94,26 +100,26 @@ export function Row({ k, sub, children, href, onClick }: { k: React.ReactNode; s
     <>
       <div className="min-w-0 flex-1">
         <div className="text-[16px]">{k}</div>
-        {sub && <div className="text-[13px] text-[var(--wai-muted)]">{sub}</div>}
+        {sub && <div className="font-mono text-xs text-muted">{sub}</div>}
       </div>
-      <div className="text-right text-[16px] font-semibold tabular-nums">{children}</div>
-      {(href || onClick) && <Icon name="chevron" className="h-4 w-4 shrink-0 text-[#aeaeb2]" />}
+      <div className="text-right font-mono text-[15px]">{children}</div>
+      {(href || onClick) && <Icon name="chevron" className="h-4 w-4 shrink-0 text-muted" />}
     </>
   );
-  const cls = "flex w-full items-center gap-3 border-b border-[var(--wai-line)] py-3 text-left";
+  const cls = "flex w-full items-center gap-3 border-b border-line py-3 text-left";
   if (href) return <Link href={href} className={cls}>{inner}</Link>;
   if (onClick) return <button onClick={onClick} className={cls}>{inner}</button>;
   return <div className={cls}>{inner}</div>;
 }
 
-// Dark pill chips for picking one option (Halter Live chips)
+// Pill chips for picking one option. Active is the primary button, the rest are secondary.
 export function Chips<T extends string>({ options, value, onChange }: { options: readonly { k: T; name: string }[]; value: T; onChange: (k: T) => void }) {
   return (
     <div className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none]">
       {options.map((o) => (
         <button
           key={o.k} onClick={() => onChange(o.k)}
-          className={`shrink-0 rounded-full px-4 py-1.5 text-[14px] ${o.k === value ? "bg-[#111] font-semibold text-white" : "bg-[var(--wai-card)] text-black"}`}
+          className={`shrink-0 rounded-full px-3.5 py-1.5 text-[13px] ${o.k === value ? "bg-ink text-paper" : "border border-line bg-white text-ink"}`}
         >
           {o.name}
         </button>
@@ -122,15 +128,15 @@ export function Chips<T extends string>({ options, value, onChange }: { options:
   );
 }
 
-// Halter bottom sheet: title, round close button, content
+// Bottom sheet: title, round close button, content
 export function Sheet({ title, sub, onClose, children }: { title: string; sub?: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 z-[600] flex items-end bg-black/40" onClick={onClose}>
-      <div className="mx-auto w-full max-w-md rounded-t-[20px] bg-white px-5 pb-[max(24px,env(safe-area-inset-bottom))] pt-5" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[600] flex items-end bg-ink/40" onClick={onClose}>
+      <div className="mx-auto w-full max-w-md rounded-t-2xl border-t border-line bg-paper px-5 pb-[max(24px,env(safe-area-inset-bottom))] pt-5" onClick={(e) => e.stopPropagation()}>
         <div className="mb-3 flex items-start justify-between gap-3">
           <div>
-            <div className="text-[24px] font-bold leading-tight">{title}</div>
-            {sub && <div className="text-[15px] text-[var(--wai-muted)]">{sub}</div>}
+            <div className="text-[24px] font-medium leading-tight tracking-tight">{title}</div>
+            {sub && <div className="text-[15px] text-muted">{sub}</div>}
           </div>
           <RoundButton icon="close" label="Close" onClick={onClose} />
         </div>
@@ -140,18 +146,14 @@ export function Sheet({ title, sub, onClose, children }: { title: string; sub?: 
   );
 }
 
-export function Label({ children }: { children: React.ReactNode }) {
-  return <div className="mb-2 text-[13px] font-semibold text-[var(--wai-muted)]">{children}</div>;
-}
-
-// Garmin 1d / 7d / 4w style segmented control
+// 1d / 7d / 4w segmented control
 export function Segmented<T extends string>({ options, value, onChange }: { options: readonly { k: T; name: string }[]; value: T; onChange: (k: T) => void }) {
   return (
-    <div className="flex rounded-[10px] bg-[var(--wai-card)] p-1">
+    <div className="flex rounded-full border border-line bg-white p-1">
       {options.map((o) => (
         <button
           key={o.k} onClick={() => onChange(o.k)}
-          className={`flex-1 rounded-[8px] py-1.5 text-[14px] font-medium ${value === o.k ? "bg-white text-black ring-1 ring-[var(--wai-line)]" : "text-[var(--wai-muted)]"}`}
+          className={`flex-1 rounded-full py-1.5 font-mono text-[13px] ${value === o.k ? "bg-ink text-paper" : "text-muted"}`}
         >
           {o.name}
         </button>
@@ -160,14 +162,14 @@ export function Segmented<T extends string>({ options, value, onChange }: { opti
   );
 }
 
-// Halter tab strip with underline
+// Tab strip with underline
 export function Tabs<T extends string>({ options, value, onChange }: { options: readonly { k: T; name: string }[]; value: T; onChange: (k: T) => void }) {
   return (
-    <div className="flex gap-6 border-b border-[var(--wai-line)]">
+    <div className="flex gap-6 border-b border-line">
       {options.map((o) => (
         <button
           key={o.k} onClick={() => onChange(o.k)}
-          className={`-mb-px border-b-2 pb-2.5 text-[16px] ${value === o.k ? "border-black font-semibold text-black" : "border-transparent text-[var(--wai-muted)]"}`}
+          className={`-mb-px border-b-2 pb-2.5 text-[16px] ${value === o.k ? "border-ink font-medium text-ink" : "border-transparent text-muted"}`}
         >
           {o.name}
         </button>
@@ -187,17 +189,17 @@ export function TabBar({ alerts }: { alerts: number }) {
   const path = usePathname();
   const active = (h: string) => (h === "/app" ? path === "/app" : path.startsWith(h));
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-[500] border-t border-[var(--wai-line)] bg-white pb-[env(safe-area-inset-bottom)] print:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-[500] border-t border-line bg-paper pb-[env(safe-area-inset-bottom)] print:hidden">
       <div className="mx-auto flex max-w-md">
         {TABS.map((t) => (
           <Link
             key={t.href} href={t.href}
-            className={`relative flex flex-1 flex-col items-center gap-0.5 pb-2 pt-2.5 text-[11px] ${active(t.href) ? "font-semibold text-black" : "text-[#8e8e93]"}`}
+            className={`relative flex flex-1 flex-col items-center gap-1 pb-2 pt-2.5 font-mono text-[10px] uppercase tracking-wider ${active(t.href) ? "text-ink" : "text-muted"}`}
           >
             <Icon name={t.icon} className="h-6 w-6" />
             {t.label}
             {t.icon === "bell" && alerts > 0 && (
-              <span className="absolute left-1/2 top-1.5 ml-1 grid h-4 min-w-4 place-items-center rounded-full bg-[var(--wai-bad)] px-1 text-[10px] font-bold text-white">{alerts}</span>
+              <span className="absolute left-1/2 top-1.5 ml-1 grid h-4 min-w-4 place-items-center rounded-full bg-alert px-1 text-[10px] text-paper">{alerts}</span>
             )}
           </Link>
         ))}
@@ -226,7 +228,7 @@ const PATHS: Record<string, string> = {
 
 export function Icon({ name, className = "h-5 w-5" }: { name: string; className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={name === "more" ? 3 : 1.9} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={name === "more" ? 3 : 1.6} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
       <path d={PATHS[name]} />
     </svg>
   );

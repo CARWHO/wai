@@ -61,11 +61,11 @@ export default function ProbePage() {
 
       <div className="flex items-center gap-4">
         <Ring value={v.score} size={64} stroke={6} color={statusColor[v.status]}>
-          <div className="text-[20px] font-bold tabular-nums">{v.score}</div>
+          <div className="text-[20px] font-medium tracking-tight tabular-nums">{v.score}</div>
         </Ring>
         <div>
-          <div className="text-[22px] font-bold leading-tight">{statusLabel[v.status]}</div>
-          <div className="text-[14px] text-[var(--wai-muted)]">{v.online ? "Live" : "Offline"} · updated {ago(r?.created_at)}</div>
+          <div className="text-[22px] font-medium leading-tight tracking-tight">{statusLabel[v.status]}</div>
+          <div className="mt-0.5 font-mono text-xs text-muted">{v.online ? "Live" : "Offline"} · updated {ago(r?.created_at)}</div>
         </div>
       </div>
 
@@ -73,10 +73,10 @@ export default function ProbePage() {
         <Card href={`/app/alerts/${id}`} className="flex items-center gap-3">
           <Dot s="bad" />
           <div className="flex-1">
-            <div className="font-semibold">{issues(alert.reading).map(issueTitle).join(", ")}</div>
-            <div className="text-[13px] text-[var(--wai-muted)]">Started {ago(alert.since)} · see what to do</div>
+            <div className="font-medium">{issues(alert.reading).map(issueTitle).join(", ")}</div>
+            <div className="font-mono text-xs text-muted">Started {ago(alert.since)} · see what to do</div>
           </div>
-          <Icon name="chevron" className="h-4 w-4 text-[#aeaeb2]" />
+          <Icon name="chevron" className="h-4 w-4 text-muted" />
         </Card>
       )}
 
@@ -95,9 +95,9 @@ export default function ProbePage() {
                 onClick={() => { setMk(x.key); setTab("history"); }}
               >
                 {fmt(x, n)}
-                <span className="ml-1 inline-block w-10 text-left text-[13px] font-normal text-[var(--wai-muted)]">{x.unit}</span>
+                <span className="ml-1 inline-block w-10 text-left text-xs text-muted">{x.unit}</span>
                 {hasLimit(x) && !isNaN(n) && (
-                  <div className="text-[13px] font-medium" style={{ color: st === "Normal" ? statusColor.good : statusColor.bad }}>{st}</div>
+                  <div className="text-xs" style={{ color: st === "Normal" ? statusColor.good : statusColor.bad }}>{st}</div>
                 )}
               </Row>
             );
@@ -110,10 +110,10 @@ export default function ProbePage() {
           <Segmented options={RANGES} value={range} onChange={setRange} />
           <Chips options={CHIPS} value={mk} onChange={setMk} />
           <div>
-            <div className="text-[40px] font-bold leading-none tabular-nums">
-              {fmt(m, mean(xs))}<span className="ml-1 text-[16px] font-medium">{m.unit}</span>
+            <div className="text-[40px] font-medium leading-none tracking-tight tabular-nums">
+              {fmt(m, mean(xs))}<span className="ml-1.5 font-mono text-[14px] text-muted">{m.unit}</span>
             </div>
-            <div className="mt-1 text-[14px] text-[var(--wai-muted)]">Average {m.name === "pH" ? "pH" : m.name.toLowerCase()}, {{ "1d": "last 24 hours", "7d": "last 7 days", "4w": "last 4 weeks" }[range]}</div>
+            <div className="mt-1.5 font-mono text-xs text-muted">Average {m.name === "pH" ? "pH" : m.name.toLowerCase()}, {{ "1d": "last 24 hours", "7d": "last 7 days", "4w": "last 4 weeks" }[range]}</div>
           </div>
           <TrendChart m={m} hours={rangeHours(range)} series={[{ name: m.name, readings: rows }]} />
           <Legend names={[]} limit={hasLimit(m)} />
@@ -124,7 +124,7 @@ export default function ProbePage() {
             <Row k="Readings">{xs.length}</Row>
           </div>
           {v.history.length > 0 && rows.length === v.history.length && range !== "1d" && (
-            <div className="text-[13px] text-[var(--wai-muted)]">Showing all readings; this probe has data from {when(v.history[0].created_at)}.</div>
+            <div className="font-mono text-xs text-muted">Showing all readings; this probe has data from {when(v.history[0].created_at)}.</div>
           )}
         </div>
       )}
@@ -138,20 +138,20 @@ export default function ProbePage() {
           <Row k="Reports every">{isNaN(interval) ? "–" : interval < 90 ? `${Math.round(interval)} min` : `${(interval / 60).toFixed(1)} h`}</Row>
           <Row k="Readings stored">{v.history.length}</Row>
           <Row k="First reading">{when(v.history[0]?.created_at)}</Row>
-          <Row k="Location" href={`/app/map?probe=${v.probe.id}`}>{v.probe.lat.toFixed(4)}, {v.probe.lng.toFixed(4)}</Row>
+          <Row k="Location" href={`/app/map?probe=${v.probe.id}`}>{v.probe.lat.toFixed(4)}, {v.probe.lng.toFixed(4)}{v.located === "gps" ? " · GPS" : v.located === "phone" ? " · phone" : ""}</Row>
         </div>
       )}
 
       {menu && (
         <Sheet title={v.probe.name} onClose={() => setMenu(false)}>
           <div className="flex flex-col gap-2.5">
-            <Link href={`/app/map?probe=${v.probe.id}`} className="flex items-center gap-3 rounded-[12px] bg-[var(--wai-card)] px-4 py-3.5">
+            <Link href={`/app/map?probe=${v.probe.id}`} className="flex items-center gap-3 rounded-2xl border border-line bg-white px-4 py-3.5">
               <Icon name="pin" />
-              <span className="flex-1 font-semibold">Show on map</span>
+              <span className="flex-1 font-medium">Show on map</span>
             </Link>
-            <button onClick={() => { csv(v.probe.name, v.history); setMenu(false); }} className="flex items-center gap-3 rounded-[12px] bg-[var(--wai-card)] px-4 py-3.5 text-left">
+            <button onClick={() => { csv(v.probe.name, v.history); setMenu(false); }} className="flex items-center gap-3 rounded-2xl border border-line bg-white px-4 py-3.5 text-left">
               <Icon name="download" />
-              <span className="flex-1 font-semibold">Download readings (CSV)</span>
+              <span className="flex-1 font-medium">Download readings (CSV)</span>
             </button>
           </div>
         </Sheet>

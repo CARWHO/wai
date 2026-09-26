@@ -52,4 +52,4 @@ export type Range = (typeof RANGES)[number]["k"];
 export const rangeHours = (k: Range) => RANGES.find((r) => r.k === k)!.hours;
 
 // Probe line colours on multi-probe charts
-export const SERIES = ["#111111", "#2f6fd6", "#c2410c", "#7c3aed"];
+export const SERIES = ["#141412", "#3a9d5d", "#d98b2b", "#6b6a64"];

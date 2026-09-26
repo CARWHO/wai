@@ -6,7 +6,7 @@ import { useFarm } from "@/lib/farm";
 import { useAI } from "@/lib/ai";
 import { ago, statusColor } from "@/lib/supabase";
 import { fmt, HOUR, issues, issueTitle, limitText, mean, METRICS, value } from "@/lib/metrics";
-import { Card, Header } from "@/components/ui";
+import { Card, Header, Label } from "@/components/ui";
 
 type Diagnosis = { wrong: string; cause: string; action: string; risk: string; source?: string };
 
@@ -45,7 +45,7 @@ export default function AlertPage() {
     return (
       <div>
         <Header title="Alert" back="/app/alerts" />
-        {!loading && <Card className="py-8 text-center text-[var(--wai-muted)]">No open alert for this probe.</Card>}
+        {!loading && <Card className="py-8 text-center text-muted">No open alert for this probe.</Card>}
       </div>
     );
 
@@ -54,7 +54,7 @@ export default function AlertPage() {
   const sections: [string, keyof Diagnosis][] = [
     ["What's wrong", "wrong"],
     ["Likely cause", "cause"],
-    ["What to do", "action"],
+    ["Next step", "action"],
     ["Risk if ignored", "risk"],
   ];
 
@@ -77,66 +77,64 @@ export default function AlertPage() {
     <div className="flex flex-col gap-6">
       <div>
         <Header title={a.probe.name} back="/app/alerts" />
-        <div className="text-[28px] font-bold leading-tight">{title}</div>
-        <div className="mt-1 text-[15px] text-[var(--wai-muted)]">Started {ago(a.since)}</div>
+        <Label><span className="text-alert">● Alert</span> · started {ago(a.since)}</Label>
+        <div className="mt-1 text-[28px] font-medium leading-tight tracking-tight">{title}</div>
       </div>
 
-      <table className="w-full text-[15px]">
+      <table className="w-full">
         <thead>
-          <tr className="text-left text-[13px] text-[var(--wai-muted)]">
+          <tr className="text-left font-mono text-[11px] uppercase tracking-wider text-muted">
             <th className="pb-1.5 font-normal"></th>
             <th className="pb-1.5 text-right font-normal">Now</th>
             <th className="pb-1.5 text-right font-normal">Usual</th>
             <th className="pb-1.5 text-right font-normal">Limit</th>
           </tr>
         </thead>
-        <tbody className="tabular-nums">
+        <tbody className="font-mono text-[14px]">
           {list.map((i) => (
-            <tr key={i.m.key} className="border-t border-[var(--wai-line)]">
-              <td className="py-2.5">{i.m.name}{i.m.unit && <span className="text-[13px] text-[var(--wai-muted)]"> {i.m.unit}</span>}</td>
-              <td className="py-2.5 text-right font-semibold" style={{ color: statusColor.bad }}>{fmt(i.m, i.x)}</td>
+            <tr key={i.m.key} className="border-t border-line">
+              <td className="py-2.5 font-sans text-[15px]">{i.m.name}{i.m.unit && <span className="font-mono text-xs text-muted"> {i.m.unit}</span>}</td>
+              <td className="py-2.5 text-right" style={{ color: statusColor.bad }}>{fmt(i.m, i.x)}</td>
               <td className="py-2.5 text-right">{fmt(i.m, usual(i.m))}</td>
-              <td className="py-2.5 text-right text-[var(--wai-muted)]">{limitText(i.m).replace(` ${i.m.unit}`, "")}</td>
+              <td className="py-2.5 text-right text-muted">{limitText(i.m).replace(` ${i.m.unit}`, "")}</td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      <div className="flex flex-col gap-4">
+      <Card className="flex flex-col gap-4">
         {sections.map(([name, k]) => (
           <div key={k}>
-            <div className="text-[17px] font-semibold">{name}</div>
-            <div className="mt-0.5 whitespace-pre-line text-[15px] leading-relaxed text-[#333]">{ai ? ai[k] : "Loading…"}</div>
+            <Label>{name}</Label>
+            <div className={`mt-1 whitespace-pre-line text-[15px] leading-relaxed ${k === "action" ? "font-medium" : ""}`}>{ai ? ai[k] : "Loading…"}</div>
           </div>
         ))}
         {ai && (
-          <div className="text-[13px] text-[var(--wai-muted)]">
-            {ai.source === "openai" ? "Written from this probe's readings." : "Standard guidance for this problem."}
-          </div>
+          <Label>{ai.source === "openai" ? "Written from this probe's readings" : "Standard guidance for this problem"}</Label>
         )}
-      </div>
+      </Card>
 
       <div className="flex flex-col gap-2.5">
-        <div className="text-[20px] font-bold">What next?</div>
+        <div className="text-[20px] font-medium tracking-tight">What next?</div>
         {CHOICES.map((c) => (
           <button
             key={c.k} onClick={() => setChoice(c.k)}
-            className="flex items-center gap-3 rounded-[12px] bg-[var(--wai-card)] px-4 py-3.5 text-left"
+            className={`flex items-center gap-3 rounded-2xl border bg-white px-4 py-3.5 text-left ${choice === c.k ? "border-ink" : "border-line"}`}
           >
             <div className="flex-1">
-              <div className="text-[16px] font-semibold">{c.name}</div>
-              <div className="text-[13px] text-[var(--wai-muted)]">{c.sub}</div>
+              <div className="text-[16px] font-medium">{c.name}</div>
+              <div className="text-[13px] text-muted">{c.sub}</div>
             </div>
-            <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 ${choice === c.k ? "border-black" : "border-[#8e8e93]"}`}>
-              {choice === c.k && <span className="h-3 w-3 rounded-full bg-black" />}
+            <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 ${choice === c.k ? "border-ink" : "border-line"}`}>
+              {choice === c.k && <span className="h-3 w-3 rounded-full bg-ink" />}
             </span>
           </button>
         ))}
       </div>
 
       <div className="flex items-center gap-6">
-        <button onClick={() => router.back()} className="text-[17px] font-semibold underline underline-offset-4">Cancel</button>
-        <button onClick={confirm} className="flex-1 rounded-[10px] bg-[#111] py-3.5 text-[17px] font-semibold text-white">
+        <button onClick={() => router.back()} className="text-[16px] underline underline-offset-4">Cancel</button>
+        <button onClick={confirm} className="flex-1 rounded-full bg-ink py-3 text-[16px] text-paper">
           {choice === "send" ? "Send" : "Confirm"}
         </button>
       </div>

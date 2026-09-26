@@ -1,25 +1,21 @@
-@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;
+@import "tailwindcss";
 
-@import 'tailwindcss/theme.css' layer(theme);
-@import 'tailwindcss/preflight.css' layer(base);
-@import '@astryxdesign/core/reset.css';
-@import '@astryxdesign/core/astryx.css';
-@import '@astryxdesign/theme-matcha/theme.css';
-@import '@astryxdesign/core/tailwind-theme.css';
-@import 'tailwindcss/utilities.css' layer(utilities);
+/* Same tokens as the landing page (wai-web/src/index.css). `watch` is the one
+   addition: the app has a middle state between healthy and alert. */
+@theme inline {
+  --color-paper: #f6f5f1;
+  --color-ink: #141412;
+  --color-muted: #6b6a64;
+  --color-line: #e3e1da;
+  --color-healthy: #3a9d5d;
+  --color-watch: #d98b2b;
+  --color-alert: #d9482b;
+  --color-mint: #dcefe0;
 
-/* Halter / Garmin style: flat, light, system sans */
-:root {
-  --wai-font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
-  --wai-card: #f2f2f4;
-  --wai-line: #e5e5ea;
-  --wai-muted: #6b6b70;
-  --wai-bad: #d23c32;
+  --font-sans: var(--font-geist), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 }
-html, body { background: #fff; color: #111; }
-html, body, h1, h2, h3, button, input, select { font-family: var(--wai-font); }
-body { padding-top: env(safe-area-inset-top); }
-/* the Matcha theme wrapper tints text olive; keep it neutral */
-main, main h1, main h2, main h3 { color: #111; }
-h1, h2, h3 { letter-spacing: -0.01em; }
 
+html, body { background: var(--color-paper); color: var(--color-ink); }
+body { font-family: var(--font-sans); padding-top: env(safe-area-inset-top); -webkit-font-smoothing: antialiased; }
+h1, h2, h3 { letter-spacing: -0.01em; }

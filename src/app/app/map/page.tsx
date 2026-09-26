@@ -11,8 +11,8 @@ import { Dot, Icon, RoundButton, Ring, Row } from "@/components/ui";
 
 const FarmMap = dynamic(() => import("@/components/FarmMap"), { ssr: false });
 
-const dark = "grid h-11 w-11 place-items-center rounded-full bg-[#111] text-white";
-const chip = "flex items-center gap-2 rounded-full bg-[#111] px-5 py-3 text-[15px] font-semibold text-white";
+const dark = "grid h-11 w-11 place-items-center rounded-full bg-ink text-paper";
+const chip = "flex items-center gap-2 rounded-full bg-ink px-5 py-3 text-[15px] font-medium text-paper";
 
 function Live() {
   const { views, farmScore, alerts } = useFarm();
@@ -34,13 +34,13 @@ function Live() {
           <button onClick={() => setReset((n) => n + 1)} aria-label="Show whole farm" className={dark}><Icon name="locate" /></button>
           <button onClick={() => setLayer((l) => (l === "satellite" ? "map" : "satellite"))} aria-label="Switch map layer" className={dark}><Icon name="layers" /></button>
         </div>
-        <div className="pointer-events-auto flex items-center gap-2.5 rounded-full bg-[#111] py-1 pl-1 pr-4 text-white">
-          <Ring value={farmScore} size={40} stroke={4} color={statusColor[s]} track="#3a3a3c">
-            <span className="text-[12px] font-bold">{farmScore}</span>
+        <div className="pointer-events-auto flex items-center gap-2.5 rounded-full bg-ink py-1 pl-1 pr-4 text-paper">
+          <Ring value={farmScore} size={40} stroke={4} color={statusColor[s]} track="#3f3e3a">
+            <span className="font-mono text-[12px]">{farmScore}</span>
           </Ring>
-          <div className="text-[13px] leading-tight">
-            <div>Farm health <b>{statusLabel[s]}</b></div>
-            <div className="text-white/70">{live} of {views.length} probes live</div>
+          <div className="font-mono text-[12px] leading-tight">
+            <div>Farm health · {statusLabel[s]}</div>
+            <div className="text-paper/70">{live} of {views.length} probes live</div>
           </div>
         </div>
         <button onClick={() => setSheet("list")} aria-label="Find a probe" className={`pointer-events-auto ${dark}`}><Icon name="search" /></button>
@@ -50,19 +50,19 @@ function Live() {
         <div className="absolute inset-x-0 bottom-24 z-[400] flex justify-center gap-2">
           <button onClick={() => setSheet("list")} className={chip}>Probes</button>
           <Link href="/app/alerts" className={chip}>
-            {alerts.length > 0 && <span className="h-2 w-2 rounded-full bg-[#f26b1d]" />} Alerts
+            {alerts.length > 0 && <span className="h-2 w-2 rounded-full bg-watch" />} Alerts
           </Link>
         </div>
       )}
 
       {/* Halter bottom sheet */}
       {sheet && (
-        <div className="absolute inset-x-0 bottom-0 z-[450] mx-auto max-h-[70dvh] max-w-md overflow-y-auto rounded-t-[20px] bg-white px-5 pb-24 pt-5">
+        <div className="absolute inset-x-0 bottom-0 z-[450] mx-auto max-h-[70dvh] max-w-md overflow-y-auto rounded-t-2xl border-t border-line bg-paper px-5 pb-24 pt-5">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <div className="text-[26px] font-bold leading-tight">{v ? v.probe.name : "Probes"}</div>
+              <div className="text-[26px] font-medium leading-tight tracking-tight">{v ? v.probe.name : "Probes"}</div>
               {v && (
-                <div className="mt-0.5 flex items-center gap-2 text-[14px] text-[var(--wai-muted)]">
+                <div className="mt-1 flex items-center gap-2 font-mono text-xs text-muted">
                   <Dot s={v.status} /> {statusLabel[v.status]} · {v.online ? "Live" : `updated ${ago(v.latest?.created_at)}`}
                 </div>
               )}
@@ -77,7 +77,7 @@ function Live() {
                   <Row key={m.key} k={m.name}>{withUnit(m, value(v.latest, m))}</Row>
                 ))}
               </div>
-              <Link href={`/app/probe/${v.probe.id}`} className="mt-4 block rounded-[10px] bg-[#111] py-3.5 text-center text-[17px] font-semibold text-white">
+              <Link href={`/app/probe/${v.probe.id}`} className="mt-4 block rounded-full bg-ink py-3.5 text-center text-[17px] font-medium text-paper">
                 Open probe
               </Link>
             </>

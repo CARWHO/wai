@@ -40,7 +40,7 @@ export function score(r?: Reading) {
 
 export const status = (s: number): Status => (s >= 80 ? "good" : s >= 50 ? "watch" : "bad");
 export const statusLabel: Record<Status, string> = { good: "Healthy", watch: "Watch", bad: "Action needed" };
-export const statusColor: Record<Status, string> = { good: "#2e9d4f", watch: "#e08a1e", bad: "#d23c32" };
+export const statusColor: Record<Status, string> = { good: "#3a9d5d", watch: "#d98b2b", bad: "#d9482b" };
 
 // Which limits a reading breaks, in plain words
 export function breaches(r?: Reading) {

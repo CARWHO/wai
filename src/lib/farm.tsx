@@ -11,7 +11,7 @@ export type ProbeView = {
   status: Status;
   online: boolean;
   breaches: string[];
-  atPhone: boolean; // real hardware probe, drawn where the phone is
+  located: "gps" | "phone" | null; // real hardware probe placed by its GPS, or next to the phone
 };
 
 export type Alert = {
@@ -36,6 +36,12 @@ type Farm = {
 const FarmContext = createContext<Farm | null>(null);
 const HANDLED_KEY = "wai-handled-alerts";
 const SNOOZED_KEY = "wai-snoozed-alerts"; // alert key -> time it wakes up
+
+// Position from the probe's GPS module, if its latest reading has a current fix
+function gpsFix(r?: Reading) {
+  const g = r?.raw?.gps as { fix?: boolean; lat?: number; lng?: number } | undefined;
+  return g?.fix && typeof g.lat === "number" && typeof g.lng === "number" ? { lat: g.lat, lng: g.lng } : null;
+}
 
 function load<T>(k: string, empty: T): T {
   if (typeof window === "undefined") return empty;
@@ -118,11 +124,13 @@ export function FarmProvider({ children }: { children: React.ReactNode }) {
         const mine = readings.filter((r) => r.probe_id === probe.id);
         const latest = mine[0];
         const s = score(latest);
-        // the ESP32 probe fills `raw`; seeded probes don't. It sits next to the phone, so draw it there.
-        const atPhone = !!here && !!latest?.raw;
+        // The ESP32 probe fills `raw`; seeded probes don't. Place it by its own GPS fix (XC3710),
+        // else next to the phone, else where the probes table says.
+        const fix = gpsFix(latest);
+        const located = fix ? "gps" : here && latest?.raw ? "phone" : null;
         return {
-          probe: atPhone ? { ...probe, ...here } : probe,
-          atPhone,
+          probe: fix ? { ...probe, ...fix } : located === "phone" ? { ...probe, ...here! } : probe,
+          located,
           latest,
           history: mine.slice(0, 500).reverse(),
           score: s,

@@ -19,7 +19,7 @@ const badge = (v: ProbeView, selected: boolean) =>
     className: "",
     iconSize: [34, 34],
     iconAnchor: [17, 17],
-    html: `<div style="width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:${statusColor[v.status]};color:#fff;font:700 12px/1 var(--wai-font);border:${selected ? "3px solid #111" : "2px solid #fff"}">${initials(v.probe.name)}</div>`,
+    html: `<div style="width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:${statusColor[v.status]};color:#f6f5f1;font:500 11px/1 var(--font-mono);border:${selected ? "3px solid #141412" : "2px solid #f6f5f1"}">${initials(v.probe.name)}</div>`,
   });
 
 const TILES = {
@@ -42,7 +42,7 @@ function FollowLive({ live }: { live?: ProbeView }) {
 export default function FarmMap({ views, selected, onSelect, layer = "satellite" }: {
   views: ProbeView[]; selected?: string; onSelect: (id: string) => void; layer?: keyof typeof TILES;
 }) {
-  const live = views.find((v) => v.atPhone);
+  const live = views.find((v) => v.located);
   const lat = live?.probe.lat ?? views.reduce((a, v) => a + v.probe.lat, 0) / views.length;
   const lng = live?.probe.lng ?? views.reduce((a, v) => a + v.probe.lng, 0) / views.length;
   return (

@@ -20,29 +20,29 @@ export function TrendChart({ m, series, hours, height = 200 }: { m: Metric; seri
   const data = [...rows.values()].sort((a, b) => a.t - b.t);
   const tick = (t: number) =>
     new Date(t).toLocaleString("en-NZ", hours <= 24 ? { hour: "numeric" } : { day: "numeric", month: "short" });
-  const axis = { fontSize: 11, fill: "#6b6b70" };
+  const axis = { fontSize: 10, fill: "#6b6a64", fontFamily: "var(--font-mono)" };
 
   if (!data.length)
-    return <div className="grid place-items-center text-[14px] text-[var(--wai-muted)]" style={{ height }}>No readings in this period</div>;
+    return <div className="grid place-items-center text-[14px] text-muted" style={{ height }}>No readings in this period</div>;
 
   return (
     <div style={{ height }}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-          <CartesianGrid vertical={false} stroke="#e5e5ea" />
-          <XAxis dataKey="t" type="number" scale="time" domain={["dataMin", "dataMax"]} tickFormatter={tick} tick={axis} tickLine={false} axisLine={{ stroke: "#e5e5ea" }} minTickGap={28} />
+          <CartesianGrid vertical={false} stroke="#e3e1da" />
+          <XAxis dataKey="t" type="number" scale="time" domain={["dataMin", "dataMax"]} tickFormatter={tick} tick={axis} tickLine={false} axisLine={{ stroke: "#e3e1da" }} minTickGap={28} />
           <YAxis tick={axis} tickLine={false} axisLine={false} width={40} domain={["auto", "auto"]} />
           <Tooltip
             isAnimationActive={false}
             labelFormatter={(t) => new Date(Number(t)).toLocaleString("en-NZ", { weekday: "short", hour: "numeric", minute: "2-digit" })}
             formatter={(v) => `${Number(v).toFixed(m.digits)}${m.unit ? ` ${m.unit}` : ""}`}
-            contentStyle={{ borderRadius: 8, border: "1px solid #e5e5ea", boxShadow: "none", fontSize: 12 }}
+            contentStyle={{ borderRadius: 12, fontFamily: "var(--font-mono)", background: "#fff", border: "1px solid #e3e1da", boxShadow: "none", fontSize: 12 }}
           />
           {[m.min, m.max].map((y) => y != null && (
-            <ReferenceLine key={y} y={y} stroke="#8e8e93" strokeDasharray="4 4" ifOverflow="extendDomain" />
+            <ReferenceLine key={y} y={y} stroke="#6b6a64" strokeDasharray="4 4" ifOverflow="extendDomain" />
           ))}
           {series.map((s, i) => (
-            <Line key={s.name} dataKey={s.name} dot={false} connectNulls stroke={SERIES[i % SERIES.length]} strokeWidth={2} isAnimationActive={false} />
+            <Line key={s.name} dataKey={s.name} dot={false} connectNulls stroke={SERIES[i % SERIES.length]} strokeWidth={1.5} isAnimationActive={false} />
           ))}
         </LineChart>
       </ResponsiveContainer>
@@ -53,7 +53,7 @@ export function TrendChart({ m, series, hours, height = 200 }: { m: Metric; seri
 export function Legend({ names, limit }: { names: string[]; limit?: boolean }) {
   if (names.length < 2 && !limit) return null;
   return (
-    <div className="flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-[var(--wai-muted)]">
+    <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-xs text-muted">
       {names.length > 1 && names.map((n, i) => (
         <span key={n} className="flex items-center gap-1.5">
           <span className="h-0.5 w-4" style={{ background: SERIES[i % SERIES.length] }} /> {n}
@@ -61,7 +61,7 @@ export function Legend({ names, limit }: { names: string[]; limit?: boolean }) {
       ))}
       {limit && (
         <span className="flex items-center gap-1.5">
-          <span className="w-4 border-t border-dashed border-[#8e8e93]" /> Limit
+          <span className="w-4 border-t border-dashed border-muted" /> Limit
         </span>
       )}
     </div>
