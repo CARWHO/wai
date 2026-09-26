@@ -11,10 +11,9 @@ import { useLiveMap } from "@/components/LiveMap";
 import { SensorCheck } from "@/components/SensorCheck";
 
 const dark = "grid h-11 w-11 place-items-center rounded-full bg-ink text-paper";
-const chip = "pointer-events-auto flex items-center gap-2 rounded-full bg-ink px-5 py-3 text-[15px] font-medium text-paper";
 
 function Live() {
-  const { views, farmScore, alerts } = useFarm();
+  const { views, farmScore } = useFarm();
   // The map itself lives in the app layout (LiveMapProvider), so it survives navigation
   const { sheet, setSheet, toggleLayer, showFarm } = useLiveMap();
   const probe = useSearchParams().get("probe") ?? undefined;
@@ -43,15 +42,6 @@ function Live() {
         </div>
         <button onClick={() => setSheet("list")} aria-label="Find a probe" className={`pointer-events-auto ${dark}`}><Icon name="search" /></button>
       </div>
-
-      {!sheet && (
-        <div className="absolute inset-x-0 bottom-24 z-[400] flex justify-center gap-2">
-          <button onClick={() => setSheet("list")} className={chip}>Probes</button>
-          <Link href="/app/alerts" className={chip}>
-            {alerts.length > 0 && <span className="h-2 w-2 rounded-full bg-watch" />} Alerts
-          </Link>
-        </div>
-      )}
 
       {/* Halter bottom sheet */}
       {sheet && (
