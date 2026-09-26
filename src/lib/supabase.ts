@@ -1,8 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 
+// Fallbacks so builds work without env vars (e.g. Vercel). Both values are public by design:
+// the publishable key ships to every browser and access is limited by RLS.
 export const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://anrgrgtgxfmzfbbfjodf.supabase.co",
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_SHQJ47S7FUEQSTO0HgUynw_SJxAjKZM",
 );
 
 export type Probe = { id: string; name: string; lat: number; lng: number };

@@ -11,6 +11,7 @@ export type ProbeView = {
   status: Status;
   online: boolean;
   breaches: string[];
+  atPhone: boolean; // real hardware probe, drawn where the phone is
 };
 
 export type Alert = {
@@ -58,6 +59,18 @@ export function FarmProvider({ children }: { children: React.ReactNode }) {
   const [handled, setHandled] = useState<string[]>(() => load(HANDLED_KEY, []));
   const [snoozed, setSnoozed] = useState<Record<string, number>>(() => load(SNOOZED_KEY, {}));
   const [now, setNow] = useState(() => Date.now());
+  const [here, setHere] = useState<{ lat: number; lng: number } | null>(null);
+
+  // Phone position. Needs HTTPS (or localhost); silently does nothing if denied.
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    const id = navigator.geolocation.watchPosition(
+      (p) => setHere({ lat: p.coords.latitude, lng: p.coords.longitude }),
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 10_000 },
+    );
+    return () => navigator.geolocation.clearWatch(id);
+  }, []);
 
   useEffect(() => {
     Promise.all([
@@ -105,8 +118,11 @@ export function FarmProvider({ children }: { children: React.ReactNode }) {
         const mine = readings.filter((r) => r.probe_id === probe.id);
         const latest = mine[0];
         const s = score(latest);
+        // the ESP32 probe fills `raw`; seeded probes don't. It sits next to the phone, so draw it there.
+        const atPhone = !!here && !!latest?.raw;
         return {
-          probe,
+          probe: atPhone ? { ...probe, ...here } : probe,
+          atPhone,
           latest,
           history: mine.slice(0, 500).reverse(),
           score: s,
@@ -115,7 +131,7 @@ export function FarmProvider({ children }: { children: React.ReactNode }) {
           breaches: breaches(latest),
         };
       }),
-    [probes, readings],
+    [probes, readings, here],
   );
 
   const alerts = useMemo<Alert[]>(() => {

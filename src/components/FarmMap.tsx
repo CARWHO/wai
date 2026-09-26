@@ -2,7 +2,8 @@
 
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { MapContainer, Marker, TileLayer } from "react-leaflet";
+import { useEffect, useRef } from "react";
+import { MapContainer, Marker, TileLayer, useMap } from "react-leaflet";
 import { statusColor } from "@/lib/supabase";
 import type { ProbeView } from "@/lib/farm";
 
@@ -26,14 +27,28 @@ const TILES = {
   map: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
 };
 
+// Jump to the live probe once, when the phone's position first arrives
+function FollowLive({ live }: { live?: ProbeView }) {
+  const map = useMap();
+  const done = useRef(false);
+  useEffect(() => {
+    if (!live || done.current) return;
+    done.current = true;
+    map.setView([live.probe.lat, live.probe.lng], 17);
+  }, [live, map]);
+  return null;
+}
+
 export default function FarmMap({ views, selected, onSelect, layer = "satellite" }: {
   views: ProbeView[]; selected?: string; onSelect: (id: string) => void; layer?: keyof typeof TILES;
 }) {
-  const lat = views.reduce((a, v) => a + v.probe.lat, 0) / views.length;
-  const lng = views.reduce((a, v) => a + v.probe.lng, 0) / views.length;
+  const live = views.find((v) => v.atPhone);
+  const lat = live?.probe.lat ?? views.reduce((a, v) => a + v.probe.lat, 0) / views.length;
+  const lng = live?.probe.lng ?? views.reduce((a, v) => a + v.probe.lng, 0) / views.length;
   return (
     <MapContainer center={[lat, lng]} zoom={15} zoomControl={false} attributionControl={false} fadeAnimation={false} zoomAnimation={false} markerZoomAnimation={false} className="h-full w-full">
       <TileLayer key={layer} url={TILES[layer]} maxZoom={19} />
+      <FollowLive live={live} />
       {views.map((v) => (
         <Marker
           key={v.probe.id}
