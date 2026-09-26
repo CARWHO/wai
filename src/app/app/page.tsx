@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { useFarm, type ProbeView } from "@/lib/farm";
-import { useAI } from "@/lib/ai";
+import { useFarmTip } from "@/lib/tip";
 import { ago, status, statusColor, statusLabel } from "@/lib/supabase";
 import { duration, HOUR, issues, issueTitle, metric, withUnit } from "@/lib/metrics";
 import { Badge, Card, Dot, Header, Icon, Label, Ring, RoundButton, Section, Spark } from "@/components/ui";
@@ -32,24 +32,7 @@ export default function Home() {
   const online = views.filter((v) => v.online).length;
   const dash = (x: string | number) => (loading ? "–" : x);
 
-  const tipKey = loading ? null : `${Math.round(farmScore / 10)}:${views.map((v) => v.status).join(",")}:${alerts.map((a) => a.id).join(",")}`;
-  const tip = useAI<{ title: string; body: string }>(
-    "tip",
-    {
-      farmScore,
-      subScores,
-      probes: views.map((v) => ({
-        name: v.probe.name,
-        online: v.online,
-        level_cm: v.latest?.level_cm,
-        pct_full: v.latest?.pct_full != null ? Math.round(v.latest.pct_full) : null,
-        empty_in_h: v.emptyIn != null ? Math.round(v.emptyIn) : null,
-        soil_pct: v.latest?.soil_pct,
-        alerts: alerts.filter((a) => a.probe.id === v.probe.id).map((a) => a.title),
-      })),
-    },
-    tipKey,
-  );
+  const tip = useFarmTip();
 
   // Garmin Training Readiness factor grid
   const factors: [string, string][] = [

@@ -257,3 +257,13 @@ export function Bars({ data, height = 64 }: { data: { k: string; label: string; 
     </div>
   );
 }
+
+// Two sparkles: marks AI features
+export function Sparkles({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-label="AI">
+      <path d="M10 4l1.9 5.6L17.5 11.5l-5.6 1.9L10 19l-1.9-5.6L2.5 11.5l5.6-1.9z" />
+      <path d="M19 2l.9 2.3L22 5.2l-2.1.9L19 8.5l-.9-2.4L16 5.2l2.1-.9z" />
+    </svg>
+  );
+}
