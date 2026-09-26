@@ -4,8 +4,10 @@ import { useFarm } from "@/lib/farm";
 import { breaches, LIMITS, statusColor, type Reading } from "@/lib/supabase";
 import { Header, Icon } from "@/components/ui";
 
-const stats = (xs: number[]) =>
-  xs.length ? { min: Math.min(...xs), max: Math.max(...xs), avg: xs.reduce((a, b) => a + b, 0) / xs.length } : null;
+const stats = (all: (number | null)[]) => {
+  const xs = all.filter((x): x is number => x != null);
+  return xs.length ? { min: Math.min(...xs), max: Math.max(...xs), avg: xs.reduce((a, b) => a + b, 0) / xs.length } : null;
+};
 const fmt = (s: ReturnType<typeof stats>, d = 1) => (s ? `${s.min.toFixed(d)} – ${s.max.toFixed(d)} (avg ${s.avg.toFixed(d)})` : "–");
 
 // Count breach events: a run of consecutive breaching readings is one event
@@ -70,7 +72,7 @@ export default function ReportPage() {
                   <tr><td>Turbidity (NTU)</td><td className="text-right tabular-nums">{fmt(stats(rs.map((r) => r.turbidity)))}</td></tr>
                   <tr><td>pH</td><td className="text-right tabular-nums">{fmt(stats(rs.map((r) => r.ph)), 2)}</td></tr>
                   <tr><td>TDS (ppm)</td><td className="text-right tabular-nums">{fmt(stats(rs.map((r) => r.tds)), 0)}</td></tr>
-                  <tr><td>Level (cm)</td><td className="text-right tabular-nums">{fmt(stats(rs.map((r) => r.level_cm).filter((x): x is number => x != null)), 0)}</td></tr>
+                  <tr><td>Level (cm)</td><td className="text-right tabular-nums">{fmt(stats(rs.map((r) => r.level_cm)), 0)}</td></tr>
                   <tr><td>Temp (°C)</td><td className="text-right tabular-nums">{fmt(stats(rs.map((r) => r.temp_c)))}</td></tr>
                 </tbody>
               </table>

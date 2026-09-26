@@ -9,11 +9,14 @@ export type Probe = { id: string; name: string; lat: number; lng: number };
 export type Reading = {
   id: number;
   probe_id: string;
-  turbidity: number;
-  ph: number;
-  temp_c: number;
-  tds: number;
+  // null when the probe has no sensor for it (the ESP32 probe only sends level_cm)
+  turbidity: number | null;
+  ph: number | null;
+  temp_c: number | null;
+  tds: number | null;
   level_cm: number | null;
+  // every unprocessed value the ESP32 probe read (see hardware/firmware/README.md)
+  raw?: Record<string, unknown> | null;
   created_at: string;
 };
 
@@ -22,14 +25,14 @@ export type Status = "good" | "watch" | "bad";
 // Alert thresholds
 export const LIMITS = { turbidity: 10, phMin: 6.5, phMax: 8.5, tds: 600 };
 
-// 0-100: penalise turbidity above 5 NTU, pH away from 7.2, TDS above 400
+// 0-100: penalise turbidity above 5 NTU, pH away from 7.2, TDS above 400. Missing values count as fine.
 export function score(r?: Reading) {
   if (!r) return 0;
   const s =
     100 -
-    Math.max(0, r.turbidity - 5) * 1.5 -
-    Math.abs(r.ph - 7.2) * 15 -
-    Math.max(0, r.tds - 400) * 0.05;
+    Math.max(0, (r.turbidity ?? 0) - 5) * 1.5 -
+    (r.ph == null ? 0 : Math.abs(r.ph - 7.2) * 15) -
+    Math.max(0, (r.tds ?? 0) - 400) * 0.05;
   return Math.round(Math.min(100, Math.max(0, s)));
 }
 
@@ -41,9 +44,9 @@ export const statusColor: Record<Status, string> = { good: "#2e9d4f", watch: "#e
 export function breaches(r?: Reading) {
   if (!r) return [];
   const out: string[] = [];
-  if (r.turbidity > LIMITS.turbidity) out.push(`Turbidity ${r.turbidity.toFixed(0)} NTU (limit ${LIMITS.turbidity})`);
-  if (r.ph < LIMITS.phMin || r.ph > LIMITS.phMax) out.push(`pH ${r.ph.toFixed(1)} (safe ${LIMITS.phMin}–${LIMITS.phMax})`);
-  if (r.tds > LIMITS.tds) out.push(`TDS ${Math.round(r.tds)} ppm (limit ${LIMITS.tds})`);
+  if (r.turbidity != null && r.turbidity > LIMITS.turbidity) out.push(`Turbidity ${r.turbidity.toFixed(0)} NTU (limit ${LIMITS.turbidity})`);
+  if (r.ph != null && (r.ph < LIMITS.phMin || r.ph > LIMITS.phMax)) out.push(`pH ${r.ph.toFixed(1)} (safe ${LIMITS.phMin}–${LIMITS.phMax})`);
+  if (r.tds != null && r.tds > LIMITS.tds) out.push(`TDS ${Math.round(r.tds)} ppm (limit ${LIMITS.tds})`);
   return out;
 }
 
