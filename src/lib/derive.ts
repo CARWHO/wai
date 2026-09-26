@@ -125,7 +125,7 @@ export function health(latest: Reading | undefined, online: boolean, lastHeard: 
     return [{ part: "Connection", s: "bad", text: `Last heard ${lastHeard}` }];
   const out: Check[] = [
     rssi != null && rssi < -80
-      ? { part: "Connection", s: "watch", text: `Weak signal (${rssi} dBm)` }
+      ? { part: "Connection", s: "watch", text: `Weak · ${rssi} dBm` }
       : { part: "Connection", s: "good", text: rssi != null ? `Live · ${rssi} dBm` : "Live" },
   ];
   const ok = num(raw.echo_ok);
@@ -133,17 +133,17 @@ export function health(latest: Reading | undefined, online: boolean, lastHeard: 
   if (ok != null)
     out.push(
       ok === 0
-        ? { part: "Water sensor", s: "bad", text: "No echo. Check wires." }
+        ? { part: "Water level", s: "bad", text: "No echo" }
         : ok < tries
-          ? { part: "Water sensor", s: "watch", text: `${ok}/${tries} echoes. Loose?` }
-          : { part: "Water sensor", s: "good", text: `${num(raw.distance_cm)?.toFixed(0) ?? "–"} cm to water` },
+          ? { part: "Water level", s: "watch", text: `${ok} of ${tries} echoes` }
+          : { part: "Water level", s: "good", text: `${num(raw.distance_cm)?.toFixed(0) ?? "–"} cm to water` },
     );
   const adc = num(raw.soil_adc);
   if (adc != null)
     out.push(
       adc === 0
-        ? { part: "Soil sensor", s: "watch", text: "0%. Dry or unplugged?" }
-        : { part: "Soil sensor", s: "good", text: `${num(raw.soil_pct)?.toFixed(0) ?? "–"}% moisture` },
+        ? { part: "Soil moisture", s: "watch", text: "0%" }
+        : { part: "Soil moisture", s: "good", text: `${num(raw.soil_pct)?.toFixed(0) ?? "–"}% moisture` },
     );
   const g = gps(latest);
   const chars = num((raw.gps as { chars?: number } | undefined)?.chars);
@@ -152,8 +152,8 @@ export function health(latest: Reading | undefined, online: boolean, lastHeard: 
       g.fix
         ? { part: "GPS", s: (g.hdop ?? 99) <= LIMITS.hdopMax ? "good" : "watch", text: `${g.sats ?? 0} satellites` }
         : chars
-          ? { part: "GPS", s: "watch", text: "Searching for sky" }
-          : { part: "GPS", s: "bad", text: "No data. Check wires." },
+          ? { part: "GPS", s: "watch", text: "No fix" }
+          : { part: "GPS", s: "bad", text: "No data" },
     );
   return out;
 }

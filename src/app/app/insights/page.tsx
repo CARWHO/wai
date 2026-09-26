@@ -108,14 +108,14 @@ function Insights() {
   </>;
 
   // Settings-style drill-down (HireOS mobile): groups of rows, each saying what's going on in a line;
-  // tap one to open its detail. `?section=` so Back closes it. AI rows carry the two sparkles.
-  type Item = { id: string; name: string; sub: string; s?: Status; ai?: boolean; metric?: MetricKey; href?: string; body?: React.ReactNode };
-  const GROUPS: { title: string; ai?: boolean; items: Item[] }[] = [
+  // tap one to open it. `?group=` opens a group's list, `?section=` a detail, so Back closes them.
+  type Item = { id: string; name: string; sub: string; s?: Status; metric?: MetricKey; href?: string; body?: React.ReactNode };
+  const GROUPS: { id: string; title: string; sub?: string; ai?: boolean; items: Item[] }[] = [
     {
-      title: "AI insights", ai: true,
+      id: "ai", title: "AI analytics", ai: true,
       items: [
         {
-          id: "today", name: "Today on the farm", ai: true, sub: tip?.title ?? "Thinking…",
+          id: "today", name: "Today on the farm", sub: tip?.title ?? "Thinking…",
           body: (
             <Card className="flex flex-col gap-2">
               <div className="text-[24px] font-medium leading-tight tracking-tight">{tip?.title ?? "Thinking…"}</div>
@@ -124,7 +124,7 @@ function Insights() {
           ),
         },
         ...(!isNaN(soil) ? [{
-          id: "fertiliser", name: "Fertiliser timing", ai: true, s: fertS,
+          id: "fertiliser", name: "Fertiliser timing", s: fertS,
           sub: fert ? `${fert.verdict} · soil ${Math.round(soil)}%` : "Checking the forecast…",
           body: (
         <Card className="flex flex-col gap-2">
@@ -140,16 +140,16 @@ function Insights() {
           ),
         }] : []),
         {
-          id: "alerts", name: "Alerts explained", ai: true, href: "/app/alerts", s: (alerts.length ? "bad" : "good") as Status,
+          id: "alerts", name: "Alerts explained", href: "/app/alerts", s: (alerts.length ? "bad" : "good") as Status,
           sub: alerts.length ? `${alerts.length} open · what's wrong and what to do` : "Nothing needs you right now",
         },
       ],
     },
     {
-      title: "Water and soil",
+      id: "water", title: "Water",
+      sub: `${fmt(metric("pct_full"), avgOf(metric("pct_full")))}% full${troughs.length ? ` · ${visitsToday} visits today` : ""}`,
       items: [
         { id: "level", name: "Water level", metric: "pct_full", s: status(subScores.level), sub: `${fmt(metric("pct_full"), avgOf(metric("pct_full")))}% full on average today` },
-        { id: "soil", name: "Soil moisture", metric: "soil_pct", s: status(subScores.soil), sub: `${fmt(metric("soil_pct"), avgOf(metric("soil_pct")))}% on average today` },
         ...(troughs.length ? [{ id: "visits", name: "Trough visits", sub: `${visitsToday} today`, body: <>
         {troughs.map((v) => {
           const days = visitsByDay(v.visits, now, 7);
@@ -172,7 +172,14 @@ function Insights() {
       ],
     },
     {
-      title: "Farm",
+      id: "soil", title: "Soil",
+      sub: `${fmt(metric("soil_pct"), avgOf(metric("soil_pct")))}% moisture on average today`,
+      items: [
+        { id: "soil", name: "Soil moisture", metric: "soil_pct", s: status(subScores.soil), sub: `${fmt(metric("soil_pct"), avgOf(metric("soil_pct")))}% on average today` },
+      ],
+    },
+    {
+      id: "farm", title: "Farm", sub: `${live} of ${views.length} probes live · ${pct}% within limits today`,
       items: [
         {
           id: "probes", name: "Probes", s: (worst.some((v) => v.status === "bad") ? "bad" : worst.length || live < views.length ? "watch" : "good") as Status,
@@ -232,33 +239,56 @@ function Insights() {
       ],
     },
   ];
-  const open = GROUPS.flatMap((g) => g.items).find((x) => x.id === params.get("section"));
+  const worstOf = (items: Item[]): Status | undefined =>
+    items.some((x) => x.s === "bad") ? "bad" : items.some((x) => x.s === "watch") ? "watch" : items.some((x) => x.s) ? "good" : undefined;
+  const [ai, ...topics] = GROUPS;
+  const item = (x: Item, back: string) => (
+    <Row
+      key={x.id} href={x.href ?? `/app/insights?section=${x.id}&back=${encodeURIComponent(back)}`}
+      k={<span className="flex items-center gap-2">{x.s ? <Dot s={x.s} /> : <span className="w-2" />} {x.name}</span>}
+      sub={<span style={{ color: x.s && x.s !== "good" ? statusColor[x.s] : undefined }}>{x.sub}</span>}
+    />
+  );
 
+  const open = GROUPS.flatMap((g) => g.items).find((x) => x.id === params.get("section"));
   if (open)
     return (
       <div className="flex flex-col gap-6">
-        <Header title={<span className="flex items-center gap-2">{open.ai && <Sparkles className="h-5 w-5 text-healthy" />}{open.name}</span>} back="/app/insights" />
+        <Header title={open.name} back={params.get("back") || "/app/insights"} />
         {open.metric ? <MetricTrend k={open.metric} set={setMk}>{trend(false)}</MetricTrend> : open.body}
+      </div>
+    );
+
+  const group = topics.find((g) => g.id === params.get("group"));
+  if (group)
+    return (
+      <div className="flex flex-col gap-6">
+        <Header title={group.title} back="/app/insights" />
+        <div className="-mt-4 border-t border-line">{group.items.map((x) => item(x, `/app/insights?group=${group.id}`))}</div>
       </div>
     );
 
   return (
     <div className="flex flex-col gap-7">
       <Header title="Insights" />
-      {GROUPS.map((g) => (
-        <section key={g.title} className={g.ai ? "-mt-2 rounded-2xl border border-line bg-white px-4 pt-3" : ""}>
-          <Label className={`flex items-center gap-1.5 ${g.ai ? "!text-healthy" : "mb-1"}`}>{g.ai && <Sparkles className="h-3.5 w-3.5" />}{g.title}</Label>
-          <div className={g.ai ? "[&>*:last-child]:border-b-0" : "border-t border-line"}>
-            {g.items.map((x) => (
-              <Row
-                key={x.id} href={x.href ?? `/app/insights?section=${x.id}`}
-                k={<span className="flex items-center gap-2">{x.ai ? <Sparkles className="h-4 w-4 text-healthy" /> : x.s ? <Dot s={x.s} /> : <span className="w-2" />} {x.name}</span>}
-                sub={<span style={{ color: x.ai && x.s && x.s !== "good" ? statusColor[x.s] : undefined }}>{x.sub}</span>}
-              />
-            ))}
-          </div>
-        </section>
-      ))}
+      <section className="-mt-2 rounded-2xl border border-line bg-white px-4 pt-3">
+        <Label className="flex items-center gap-1.5 !text-healthy"><Sparkles className="h-3.5 w-3.5" />{ai.title}</Label>
+        <div className="[&>*:last-child]:border-b-0">{ai.items.map((x) => item(x, "/app/insights"))}</div>
+      </section>
+      <div className="border-t border-line">
+        {topics.map((g) => {
+          const s = worstOf(g.items);
+          // a group of one opens straight into it
+          const href = g.items.length === 1 && !g.items[0].href ? `/app/insights?section=${g.items[0].id}` : `/app/insights?group=${g.id}`;
+          return (
+            <Row
+              key={g.id} href={href}
+              k={<span className="flex items-center gap-2">{s ? <Dot s={s} /> : <span className="w-2" />} {g.title}</span>}
+              sub={g.sub}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }
