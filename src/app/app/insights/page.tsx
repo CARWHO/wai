@@ -21,7 +21,7 @@ const VERDICT_COLOR: Record<string, string> = { "Apply now": statusColor.good, "
 function Insights() {
   const router = useRouter();
   const params = useSearchParams();
-  const { views, readings, loading, alerts, subScores, demo, setDemo } = useFarm();
+  const { views, readings, loading, subScores, demo, setDemo } = useFarm();
   const tip = useFarmTip();
   const [mk, setMk] = useState<MetricKey>("pct_full");
   const [range, setRange] = useState<Range>("1d");
@@ -139,10 +139,6 @@ function Insights() {
         </Card>
           ),
         }] : []),
-        {
-          id: "alerts", name: "Alerts explained", href: "/app/alerts", s: (alerts.length ? "bad" : "good") as Status,
-          sub: alerts.length ? `${alerts.length} open · what's wrong and what to do` : "Nothing needs you right now",
-        },
       ],
     },
     {
