@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Archivo, Chivo, Chivo_Mono } from "next/font/google";
 import "./globals.css";
 
-const geist = Geist({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-geist" });
-// Geist Mono, as on the landing page: same proportions as Geist
-const mono = Geist_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-geist-mono" });
+// Same fonts as the landing page (wai-web/index.html)
+const chivo = Chivo({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-chivo" });
+const mono = Chivo_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-chivo-mono" });
+const logo = Archivo({ subsets: ["latin"], axes: ["wdth"], variable: "--font-archivo" });
 
 export const metadata: Metadata = {
   title: "Wai",
@@ -21,7 +22,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en-NZ" className={`${geist.variable} ${mono.variable}`}>
+    <html lang="en-NZ" className={`${chivo.variable} ${mono.variable} ${logo.variable}`}>
       <body>{children}</body>
     </html>
   );

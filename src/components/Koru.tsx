@@ -16,7 +16,7 @@ export function Koru({ paint = "currentColor", viewBox = "265 145 710 710", clas
 // Koru + "wai", as in the landing page header
 export function Wordmark({ className = "" }: { className?: string }) {
   return (
-    <span className={`flex items-center gap-2 text-[28px] font-bold leading-none tracking-tight ${className}`} aria-label="Wai">
+    <span className={`font-logo flex items-center gap-2 text-[28px] font-semibold leading-none tracking-tight [font-stretch:125%] ${className}`} aria-label="Wai">
       <Koru className="size-6" />
       wai
     </span>
