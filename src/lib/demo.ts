@@ -1,8 +1,9 @@
 import { LIMITS, type Probe, type Reading } from "./supabase";
 
-// Demo mode: the hardware probe always looks like it's working. Real readings that look right
-// pass through untouched; missing or failed values are filled in from the last good ones,
-// and silent stretches (including up to now) get readings every minute.
+// Demo mode for the hardware probe: real readings pass through as they are, except GPS, which
+// can't get a fix indoors, so it reads as a fix at the phone (or the last good fix). Past silent
+// stretches get readings every minute so the history is unbroken; up to now stays real, so an
+// unplugged probe still shows offline.
 
 export const DEMO_KEY = "wai-demo";
 const STEP = 60_000;
@@ -31,29 +32,9 @@ function goodGps(r: Reading) {
   return g?.fix && num(g.lat) != null && num(g.lng) != null && (g.hdop ?? 99) <= LIMITS.hdopMax ? { lat: g.lat!, lng: g.lng! } : null;
 }
 
-// A trough fills and drains slowly, so in demo mode the level follows the median of the
-// 10 minutes around each reading and moves at most 1 cm a minute. Spikes (a hand, a bump,
-// the probe picked up) disappear; a real change still comes through, just smoothly.
-const WINDOW = 5 * 60_000;
-const RATE = 1 / 60_000; // cm per ms
-function smoothLevels(old: Reading[], depth: number, start: number) {
-  const good = old.map((r) => goodLevel(r, depth));
-  const ts = old.map(t);
-  let lo = 0, hi = 0, prev = start;
-  return old.map((_, i) => {
-    while (ts[lo] < ts[i] - WINDOW) lo++;
-    while (hi < old.length && ts[hi] <= ts[i] + WINDOW) hi++;
-    const xs = good.slice(lo, hi).filter((x): x is number => x != null).sort((a, b) => a - b);
-    const target = xs.length ? xs[Math.floor(xs.length / 2)] : prev;
-    const step = RATE * (i ? ts[i] - ts[i - 1] : 0);
-    prev = +(prev + Math.max(-step, Math.min(step, target - prev))).toFixed(1);
-    return prev;
-  });
-}
-
-function patch(r: Reading, g: Good, depth: number, ms: number, id: number, smooth?: number): Reading {
+function patch(r: Reading, g: Good, depth: number, ms: number, id: number): Reading {
   const real = goodLevel(r, depth);
-  const level = smooth ?? real ?? +(g.level + wobble(ms, 0.4)).toFixed(1);
+  const level = real ?? +(g.level + wobble(ms, 0.4)).toFixed(1);
   const lvl = real != null && Math.abs(real - level) < 0.5 ? real : null;
   const soil = goodSoil(r) ?? +(g.soil + wobble(ms, 0.8, 41 * 60_000)).toFixed(1);
   const fix = goodGps(r);
@@ -94,7 +75,6 @@ export function demoFill(rows: Reading[], probe: Probe, now: number, here?: { la
     soil: old.map(goodSoil).find((x) => x != null) ?? 42,
     ...(here ?? old.map(goodGps).find((x) => x) ?? { lat: probe.home_lat ?? probe.lat, lng: probe.home_lng ?? probe.lng }),
   };
-  const smooth = smoothLevels(old, depth, g.level);
   const out: Reading[] = [];
   let fake = -1;
   const fill = (from: number, to: number, like: Reading) => {
@@ -104,17 +84,12 @@ export function demoFill(rows: Reading[], probe: Probe, now: number, here?: { la
   for (let i = 0; i < old.length; i++) {
     const r = old[i];
     if (i && t(r) - t(old[i - 1]) > MAX_GAP) fill(t(old[i - 1]), t(r), old[i - 1]);
-    const p = patch(r, g, depth, t(r), r.id, smooth[i]);
-    out.push(p);
-    g.level = p.level_cm!;
-    g.soil = p.soil_pct!;
     const f = goodGps(r);
+    const gps = (r.raw?.gps as Record<string, unknown> | undefined) ?? {};
+    out.push(f ? r : { ...r, raw: { ...r.raw, gps: { ...gps, fix: true, lat: g.lat, lng: g.lng, sats: 8, hdop: 0.9, age_ms: 800 } } });
+    g.level = goodLevel(r, depth) ?? g.level;
+    g.soil = goodSoil(r) ?? g.soil;
     if (f && !here) Object.assign(g, f);
-  }
-  const last = old.at(-1)!;
-  if (now - t(last) > MAX_GAP) {
-    fill(Math.max(t(last), now - MAX_FILL * STEP), now - STEP, last);
-    out.push(patch({ ...last, raw: { ...(last.raw ?? {}), echo_ok: 0, soil_pct: 0, soil_adc: 0, gps: { fix: false } } }, g, depth, now - 5_000, fake--));
   }
   return story(out, depth, now).reverse();
 }
