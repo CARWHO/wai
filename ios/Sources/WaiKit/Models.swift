@@ -174,14 +174,15 @@ private let isoFrac: ISO8601DateFormatter = {
 private let isoPlain = ISO8601DateFormatter()
 
 public func parseISO(_ s: String) -> Millis {
-  if let d = isoFrac.date(from: s) ?? isoPlain.date(from: s) { return d.timeIntervalSince1970 * 1000 }
+  // rounded: Date is a Double of seconds, so ms can come back a fraction off and break floor(ms / 1000)
+  if let d = isoFrac.date(from: s) ?? isoPlain.date(from: s) { return (d.timeIntervalSince1970 * 1000).rounded() }
   // Postgres may emit more than 3 fractional digits; trim to 3
   if let dot = s.firstIndex(of: "."), let end = s[dot...].firstIndex(where: { $0 == "+" || $0 == "Z" || $0 == "-" }) {
     let frac = String(s[s.index(after: dot)..<end]).prefix(3)
     let fixed = String(s[..<dot]) + "." + frac + String(s[end...])
-    if let d = isoFrac.date(from: fixed) { return d.timeIntervalSince1970 * 1000 }
+    if let d = isoFrac.date(from: fixed) { return (d.timeIntervalSince1970 * 1000).rounded() }
   }
   return .nan
 }
 
-public func isoString(_ ms: Millis) -> String { isoFrac.string(from: Date(timeIntervalSince1970: ms / 1000)) }
+public func isoString(_ ms: Millis) -> String { jsISO(ms) } // whole-ms exact, like Date.prototype.toISOString
