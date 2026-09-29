@@ -1,5 +1,19 @@
 import SwiftUI
 import WaiKit
 
-// STUB: replaced by the screen port.
-struct AlertsScreen: View { var body: some View { Text("Alerts") } }
+// src/app/app/alerts/page.tsx
+struct AlertsScreen: View {
+  var body: some View {
+    ScrollView {
+      VStack(alignment: .leading, spacing: 24) {
+        Header("Alerts")
+        AlertList().padding(.top, -16)
+      }
+      .frame(maxWidth: 448)
+      .padding(.horizontal, Theme.gutter)
+      .padding(.bottom, 112)
+      .frame(maxWidth: .infinity)
+    }
+    .background(Theme.paper)
+  }
+}

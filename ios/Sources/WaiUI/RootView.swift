@@ -4,13 +4,14 @@ import WaiKit
 // src/app/app/layout.tsx + login/page.tsx: signed-out visitors see the login page, then the app.
 public struct RootView: View {
   @State private var session = SessionStore()
-  public init() {}
+  let skipLogin: Bool // dev runner only: RLS allows anonymous reads, so the shell works without a session
+  public init(skipLogin: Bool = false) { self.skipLogin = skipLogin }
   public var body: some View {
     Group {
       switch session.state {
       case .loading: Theme.paper.ignoresSafeArea()
-      case .signedOut: LoginScreen(session: session)
-      case .signedIn: AppShell(session: session)
+      case .signedOut where !skipLogin: LoginScreen(session: session)
+      default: AppShell(session: session)
       }
     }
     .waiPage()

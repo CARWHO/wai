@@ -5,6 +5,6 @@ import WaiUI
 @main
 struct WaiMacApp: App {
   var body: some Scene {
-    WindowGroup("Wai") { RootView().frame(minWidth: 390, idealWidth: 390, minHeight: 844, idealHeight: 844) }
+    WindowGroup("Wai") { RootView(skipLogin: ProcessInfo.processInfo.environment["WAI_SKIP_LOGIN"] == "1").frame(minWidth: 390, idealWidth: 390, minHeight: 844, idealHeight: 844) }
   }
 }
