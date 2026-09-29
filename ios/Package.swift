@@ -19,5 +19,6 @@ let package = Package(
     .executableTarget(name: "WaiMac", dependencies: ["WaiUI"]),
     // Command Line Tools ship neither XCTest nor swift-testing, so checks run as an executable: `swift run WaiKitCheck`
     .executableTarget(name: "WaiKitCheck", dependencies: ["WaiKit"]),
+    .executableTarget(name: "WaiLiveCheck", dependencies: ["WaiKit"]),
   ]
 )
