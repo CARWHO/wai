@@ -11,28 +11,32 @@ public final class CommandsStore {
   public private(set) var busy = false
   public private(set) var error: String?
   @ObservationIgnored private var task: Task<Void, Never>?
-  @ObservationIgnored private var channel: RealtimeChannelV2?
+  @ObservationIgnored private var stopping: Task<Void, Never>? // the previous task, until its channel is removed
 
   public init(probeId: String) { self.probeId = probeId }
 
   public func start() {
     guard task == nil else { return }
+    let previous = stopping
     task = Task { [weak self] in
+      // supabase.channel returns a channel that is still registered, and a subscribed channel takes no new listeners
+      await previous?.value
       guard let self else { return }
       await self.load()
+      if Task.isCancelled { return }
       let ch = supabase.channel("commands-\(self.probeId)")
-      self.channel = ch
       let changes = ch.postgresChange(AnyAction.self, schema: "public", table: "commands", filter: .eq("probe_id", value: self.probeId))
       do { try await ch.subscribeWithError() } catch { print("commands realtime:", error) }
       for await _ in changes { await self.load() }
+      // ends on stop(); removed in a task of its own so the cancellation does not cut the unsubscribe short
+      await Task { await supabase.removeChannel(ch) }.value
     }
   }
 
   public func stop() {
     task?.cancel()
+    stopping = task
     task = nil
-    if let channel { Task { await supabase.removeChannel(channel) } }
-    channel = nil
   }
 
   public func send(_ cmd: Command.Cmd, arg: Int? = nil) async {

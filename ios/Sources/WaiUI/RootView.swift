@@ -47,21 +47,34 @@ struct AppShell: View {
     .environment(router)
     .environment(session)
     .task { farm.start() }
+    .onDisappear { farm.stop() }
   }
 
   private func stack<Root: View>(_ path: Binding<[Route]>, @ViewBuilder root: () -> Root) -> some View {
     NavigationStack(path: path) {
       root()
+        .hiddenNavigationBar()
         .navigationDestination(for: Route.self) { r in
-          switch r {
-          case .probe(let id): ProbeScreen(id: id)
-          case .alert(let id): AlertDetailScreen(id: id)
-          case .report: ReportScreen()
+          Group {
+            switch r {
+            case .probe(let id): ProbeScreen(id: id)
+            case .alert(let id): AlertDetailScreen(id: id)
+            case .report: ReportScreen()
+            }
           }
+          .hiddenNavigationBar()
         }
     }
+  }
+}
+
+extension View {
+  // screens draw their own Header, like the web. Must be set on each view inside the stack, not on the stack.
+  fileprivate func hiddenNavigationBar() -> some View {
     #if os(iOS)
-    .toolbar(.hidden, for: .navigationBar) // screens draw their own Header, like the web
+    toolbar(.hidden, for: .navigationBar)
+    #else
+    self
     #endif
   }
 }

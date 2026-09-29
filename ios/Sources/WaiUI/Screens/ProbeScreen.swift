@@ -239,7 +239,7 @@ struct ProbeContent: View {
             .disabled(fix == nil).opacity(fix == nil ? 0.5 : 1)
             Text(homeMsg ?? (fix == nil ? "Waiting for a GPS fix with HDOP ≤ 5."
               : v.probe.homeLat != nil
-                ? "Uses the last good fix, \(jsString(jsRound(metres(Coord(lat: v.probe.homeLat!, lng: v.probe.homeLng!), fix!)))) m from the current home."
+                ? "Uses the last good fix, \(jsString(jsRound(metres(Coord(lat: v.probe.homeLat!, lng: v.probe.homeLng ?? .nan), fix!)))) m from the current home."
                 : "Uses the last good fix."))
               .font(WaiFont.mono(12)).foregroundStyle(Theme.muted)
           }

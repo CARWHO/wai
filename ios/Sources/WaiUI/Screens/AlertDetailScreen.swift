@@ -214,6 +214,7 @@ struct AlertDetail: View {
       router.openHome()
     } else {
       farm.snooze(a.key, ms: HOUR)
+      router.back()
       router.openAlerts()
     }
   }

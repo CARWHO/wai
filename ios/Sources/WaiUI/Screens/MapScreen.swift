@@ -34,7 +34,7 @@ struct MapScreen: View {
       }
     }
     // /app/map?probe=: the page reads the probe each time Live opens
-    .onChange(of: visible, initial: true) { if visible { sheet = router.mapProbe } }
+    .onChange(of: visible, initial: true) { if visible { sheet = router.mapProbe } else { router.mapProbe = nil } }
     .onChange(of: router.mapProbe) { if visible { sheet = router.mapProbe } }
   }
 

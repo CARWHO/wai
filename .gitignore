@@ -45,3 +45,4 @@ next-env.d.ts
 ios/.build*
 ios/*.xcodeproj/xcuserdata
 ios/DerivedData
+ios/renders/

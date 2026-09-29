@@ -57,6 +57,24 @@ npx tsx ios/scripts/fixtures.ts      # from the repo root; fetches live rows, ne
 | Recharts | Swift Charts (`TrendChart`), `Path` (`Spark`, `Ring`, `Bars`) |
 | `?demo=1` | none; demo mode is the in-app toggle only |
 
-## Known gaps
+## Not ported, or different
 
-See the "Not ported" section at the end of this file, kept current by the porting log.
+- **Print / Save PDF** on the report: the port shares plain text through the system share sheet. No PDF.
+- **`?demo=1`** URL switch: demo mode is the in-app toggle only (Insights).
+- **Map tiles**: Apple imagery and standard map instead of Esri World Imagery and OSM. Apple's logo cannot be hidden.
+- **Icons**: SF Symbols close to the web's strokes, not identical. The pin is `mappin.and.ellipse`.
+- **CSV download** on the probe menu: a `ShareLink`; the menu stays open after sharing.
+- **Dates**: "27 Sep" where the browser writes "27 Sept" (en-NZ). Everything else uses fixed formats matching the web.
+- **Legend** wraps with a private layout; **tables** use `Grid`, so column widths are close, not exact.
+- **iOS-only code** (`#if os(iOS)`) compiled nowhere yet. Check first in a simulator: the hidden system nav bar and edge-swipe back, `waiSheet` detent height on first show, `ShareLink` from inside a sheet, the number-pad interval field (no return key), the tab bar riding above the keyboard, the map's top safe-area padding.
+- **Close and Back** pop the current tab's stack. The web links to fixed pages, so Live → Open probe → Close lands on Home here, not Live.
+- **Tab state**: switching tabs rebuilds the tab's root view (selected metric, range, open Insights section reset). Navigation paths persist.
+- **Realtime INSERT** path was subscribed but never exercised by a live insert during checks.
+
+## Verified on this machine
+
+- `swift build`: every target.
+- `swift run WaiKitCheck`: 133,428 fixture checks, 0 failures (metrics, derive, demo, views, alerts, scores vs the TypeScript).
+- `swift run WaiLiveCheck`: 3 probes, 3,126 rows, farm score and alerts from the live project.
+- `WAI_SKIP_LOGIN=1 WaiMac` ran for 25 s without output or crash.
+- Offscreen renders of every screen with fixture data are in `ios/renders/` (not committed).
