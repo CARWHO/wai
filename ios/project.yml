@@ -1,0 +1,38 @@
+# XcodeGen spec for the iOS app. Generate with `xcodegen generate` in this directory, then open Wai.xcodeproj.
+name: Wai
+options:
+  bundleIdPrefix: nz.co.wai
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "16.0"
+packages:
+  WaiPackage:
+    path: .
+targets:
+  Wai:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources/WaiiOS
+    dependencies:
+      - package: WaiPackage
+        product: WaiUI
+    info:
+      path: Sources/WaiiOS/Info.plist
+      properties:
+        CFBundleDisplayName: Wai
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIUserInterfaceStyle: Light
+        NSLocationWhenInUseUsageDescription: Wai places your hardware probe next to your phone and shows where you are on the farm map.
+        ITSAppUsesNonExemptEncryption: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: nz.co.wai.app
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ""
