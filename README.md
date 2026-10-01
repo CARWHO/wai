@@ -23,9 +23,9 @@ Every reading lands live. The AI works out the cause, the fix and how long you'v
 ## App
 
 <p>
-  <img src="public/pitch/home.png" width="240" alt="Home: alerts, Wai AI guidance and farm health score" />
-  <img src="public/pitch/alert-moved.png" width="240" alt="Alert: what's happening, what to do next, what happens if nothing changes" />
-  <img src="public/pitch/insights.png" width="240" alt="Insights: fertiliser timing, water, soil and farm summary" />
+  <img src="docs/app-home.png" width="240" alt="Home: alerts, Wai AI guidance and farm health score" />
+  <img src="docs/app-alert.png" width="240" alt="Alert: what's happening, what to do next, what happens if nothing changes" />
+  <img src="docs/app-insights.png" width="240" alt="Insights: fertiliser timing, water, soil and farm summary" />
 </p>
 
 - Farm health score
