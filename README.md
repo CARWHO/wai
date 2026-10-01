@@ -2,7 +2,7 @@
 
 The health monitor for your farm. It does the checking for you.
 
-2nd of 60 teams at the OpenAI Hackathon. Mobile app, web app and the hardware, all demoed live. [trywai.now](https://trywai.now)
+2nd at the OpenAI Hackathon. Mobile app, web app and the hardware, all demoed live. [trywai.now](https://trywai.now)
 
 <img src="docs/unit.jpg" width="360" alt="Wai sensor unit" />
 
@@ -18,7 +18,7 @@ Probe → LoRa (no SIM) → gateway → cloud → AI.
 
 Every reading lands live. The AI works out the cause, the fix and how long you've got.
 
-<img src="docs/field-test.jpg" width="360" alt="Testing the probe on the grass outside the venue" />
+<img src="docs/pipeline.png" width="720" alt="Probe, LoRa, gateway, cloud, AI, app" />
 
 ## App
 
