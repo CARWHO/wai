@@ -4,7 +4,7 @@ The health monitor for your farm. It does the checking for you.
 
 2nd of 60 teams at the OpenAI Hackathon. Mobile app, web app and the hardware, all demoed live. [trywai.now](https://trywai.now)
 
-![Wai sensor unit](docs/unit.jpg)
+<img src="docs/unit.jpg" width="360" alt="Wai sensor unit" />
 
 ## Problem
 
@@ -18,7 +18,7 @@ Probe → LoRa (no SIM) → gateway → cloud → AI.
 
 Every reading lands live. The AI works out the cause, the fix and how long you've got.
 
-![Testing the probe on the grass outside the venue](docs/field-test.jpg)
+<img src="docs/field-test.jpg" width="360" alt="Testing the probe on the grass outside the venue" />
 
 ## App
 
@@ -40,7 +40,7 @@ $99/month for the software, per device. Hardware is $0 upfront.
 
 ## Hardware
 
-![Holding the unit at the hackathon](docs/unit-in-hand.jpg)
+<img src="docs/unit-in-hand.jpg" width="360" alt="Holding the unit at the hackathon" />
 
 Probes chain over LoRa. Each one reaches 1 to 3 km to the next, so a string of them covers a whole farm with one gateway.
 
