@@ -2,7 +2,7 @@
 
 The health monitor for your farm. It does the checking for you.
 
-2nd at the OpenAI Hackathon. Mobile app, web app and the hardware, all demoed live. [trywai.now](https://trywai.now)
+2nd at the [OpenAI Hackathon](https://saasathon.dev). Mobile app, web app and the hardware, all demoed live. [trywai.now](https://trywai.now)
 
 <img src="docs/unit.jpg" width="360" alt="Wai sensor unit" />
 
