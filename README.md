@@ -1,46 +1,52 @@
 # Wai
 
-A fitness tracker for farms. Cheap sensors in the field; AI monitors, diagnoses, predicts and reports.
+The health monitor for your farm. It does the checking for you.
+
+2nd of 60 teams at the OpenAI Hackathon. Mobile app, web app and the hardware, all demoed live. [trywai.now](https://trywai.now)
+
+![Wai sensor unit](docs/unit.jpg)
 
 ## Problem
 
-Farmers spend hours on manual checks (ponds, troughs, streams) and still find problems too late: fines, sick stock, wasted inputs.
+- 2 h a day driving round the farm to check water and soil.
+- +43% on fertiliser costs.
+- $1M fine for run-off from fertilising before the rain.
 
 ## How it works
 
-1. **Hardware**: ESP32 sensor probes (water level, quality, more) stream readings to the cloud.
-2. **SaaS**: AI turns the data into actions: alerts, predictions, compliance-ready reports.
+Probe → LoRa (no SIM) → gateway → cloud → AI.
 
-## Mobile app
+Every reading lands live. The AI works out the cause, the fix and how long you've got.
+
+![Testing the probe on the grass outside the venue](docs/field-test.jpg)
+
+## App
+
+<p>
+  <img src="public/pitch/home.png" width="240" alt="Home: alerts, Wai AI guidance and farm health score" />
+  <img src="public/pitch/alert-moved.png" width="240" alt="Alert: what's happening, what to do next, what happens if nothing changes" />
+  <img src="public/pitch/insights.png" width="240" alt="Insights: fertiliser timing, water, soil and farm summary" />
+</p>
 
 - Farm health score
-- Suggestions and predictions
-- Map of devices
-- Device health and battery
-- Overview of all data
-- Live readings from connected hardware
-
-## Value
-
-- Safety for farmers and animals
-- More production
-- Time saved on manual checks
-- Fines avoided, compliance proof
-- Less wasted material
+- Wai AI: suggestions and insights on each probe's current readings
+- Alerts: what changed, why, what to do, what it costs if you wait
+- Map of probes, with health and battery
+- Live readings from the real hardware
 
 ## Pricing
 
-Subscription per acre per month. Farmers pay for the outcome, not the hardware.
+$99/month for the software, per device. Hardware is $0 upfront.
 
-## Stack
+## Hardware
 
-- Next.js (iOS-style PWA) on Vercel
-- Supabase: database, auth, realtime
-- ESP32 → Supabase REST
+![Holding the unit at the hackathon](docs/unit-in-hand.jpg)
 
-### Hardware (demo)
+Probes chain over LoRa. Each one reaches 1 to 3 km to the next, so a string of them covers a whole farm with one gateway.
 
-- Board: [Duinotech ESP32, Wi-Fi + Bluetooth (Jaycar XC3800)](https://www.jaycar.co.nz/duinotech-esp32-main-board-with-wi-fi-and-bluetooth/p/XC3800)
-- Water level: [HC-SR04 ultrasonic (Jaycar XC4442)](https://www.jaycar.co.nz/arduino-compatible-dual-ultrasonic-sensor-module/p/XC4442), mounted above the trough. Echo is 5V: use a voltage divider to the 3.3V ESP32 pin.
-- Soil moisture (optional): [Jaycar XC4604](https://www.jaycar.co.nz/duinotech-arduino-compatible-soil-moisture-sensor-module/p/XC4604), analogue into an ADC pin.
-- Power: USB from a laptop (micro-USB data cable).
+- ESP32
+- LoRa radio, 923 MHz
+- GPS
+- Ultrasonic water level sensor
+- Soil moisture probe
+- 3D printed case
