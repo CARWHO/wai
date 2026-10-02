@@ -1,9 +1,9 @@
-<!-- BEGIN:nextjs-agent-rules -->
+# Wai
 
-# This is NOT the Next.js you know
+Swift package at the repo root. `WaiKit` is the domain and Supabase store, `WaiUI` the SwiftUI screens,
+`WaiiOS` the iOS entry (Xcode project from `project.yml`), `WaiMac` the macOS dev runner.
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
-
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
-
-<!-- END:nextjs-agent-rules -->
+- `swift build` builds every target on macOS. `swift run WaiKitCheck` runs the fixture checks and exits 1 on failure.
+- `xcodegen generate` after editing `project.yml`. `Wai.xcodeproj` is committed.
+- `api/ai.ts` is the only TypeScript: a Vercel function the app calls for AI text. It is not part of the Swift build.
+- Fixtures in `Fixtures/` are the frozen reference from the retired TypeScript domain code. Do not regenerate them.

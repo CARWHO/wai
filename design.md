@@ -1,5 +1,7 @@
 # Design
 
+> Superseded. This is the hackathon design note for the Next.js web app, which the `swift-primary` branch retired. The app is now the SwiftUI package at the repo root; see `README.md`. The Supabase backend, hardware and AI prompts are unchanged.
+
 ## Stack
 
 | Layer | Choice |
