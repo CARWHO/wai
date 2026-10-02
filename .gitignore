@@ -42,7 +42,7 @@ next-env.d.ts
 
 # playwright screenshots
 .playwright-mcp/
-ios/.build*
-ios/*.xcodeproj/xcuserdata
-ios/DerivedData
-ios/renders/
+/.build*
+*.xcodeproj/xcuserdata
+/DerivedData
+/renders/
